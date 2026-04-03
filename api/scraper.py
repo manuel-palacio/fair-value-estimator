@@ -208,13 +208,20 @@ def parse_listing(url: str) -> dict:
     if hoa_raw:
         result["adj_hoa"] = map_hoa(hoa_raw)
 
-    # Regional median kr/m² from SCB (fritidshus average price ÷ typical sqm)
+    # Regional median + implied peak kr/m² from SCB
     county_slug = extract_county_slug(url)
     riks = COUNTY_TO_RIKS.get(county_slug or "")
     if riks:
         median_psm = fetch_scb_median_psm(riks)
         if median_psm:
             result["medianpsm"] = median_psm
+            # Implied peak: current regional average ÷ default cycle index (0.88)
+            result["peakpsm"] = round(median_psm / 0.88)
+
+    # newbuild premium: zero for properties older than 10 years
+    build = result.get("buildyear")
+    if build and (2026 - build) > 10:
+        result["newbuild"] = 0
 
     # Strip None values so the frontend knows which fields were found
     return {k: v for k, v in result.items() if v is not None}
