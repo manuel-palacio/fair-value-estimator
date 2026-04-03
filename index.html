@@ -433,6 +433,7 @@
         <label>
           <span class="label-text" id="label-medianpsm">Mediankris i området (kr/m²)</span>
           <input type="number" id="medianpsm" value="24000" oninput="recalc()">
+          <span class="helper-note" id="medianpsm-source" style="display:none;font-size:12px"></span>
         </label>
         <label>
           <span class="label-text" id="label-newbuild">Nybyggnadspremie (kr/m²)</span>
@@ -594,6 +595,7 @@
         langLabel:      'EN',
         importCardTitle:'Hämta uppgifter från annons',
         importSourceNote:'Stöds för närvarande: Fastighetsbyran.com',
+        medianpsmSource: 'Regionalt snitt från SCB (fritidshus). Justera vid behov.',
         importBtn:      'Hämta',
         importLoading:  'Hämtar annonsdata\u2026',
         importOk:       function(n) { return 'Hittade ' + n + ' f\u00e4lt \u2014 kontrollera marknadsdata och kvalitativa justeringar manuellt.'; },
@@ -705,6 +707,7 @@
         langLabel:      'SV',
         importCardTitle:'Import from listing',
         importSourceNote:'Currently supported: Fastighetsbyran.com',
+        medianpsmSource: 'Regional average from SCB (fritidshus). Adjust if needed.',
         importBtn:      'Fetch',
         importLoading:  'Fetching listing data\u2026',
         importOk:       function(n) { return 'Populated ' + n + ' fields \u2014 check market data and qualitative adjustments manually.'; },
@@ -825,6 +828,8 @@
 
       document.getElementById('import-card-title').textContent   = t('importCardTitle');
       document.getElementById('import-source-note').textContent  = t('importSourceNote');
+      var mpNote = document.getElementById('medianpsm-source');
+      if (mpNote.style.display !== 'none') mpNote.textContent = t('medianpsmSource');
       document.getElementById('fetch-btn-el').textContent        = t('importBtn');
 
       document.getElementById('card-core-title').textContent     = t('cardCore');
@@ -983,7 +988,7 @@
     }
 
     /* ── Listing importer ── */
-    var NUMERIC_FIELDS  = ['asking', 'sqm', 'plot', 'buildyear', 'taxval', 'opex'];
+    var NUMERIC_FIELDS  = ['asking', 'sqm', 'plot', 'buildyear', 'taxval', 'opex', 'medianpsm'];
     var DROPDOWN_FIELDS = ['adj_energy', 'adj_heating', 'adj_hoa'];
 
     function setImportStatus(cls, text) {
@@ -1048,6 +1053,11 @@
             document.getElementById(id).value = data[id];
             markImported(id);
             populated++;
+            if (id === 'medianpsm') {
+              var note = document.getElementById('medianpsm-source');
+              note.textContent = t('medianpsmSource');
+              note.style.display = 'block';
+            }
           }
         });
 

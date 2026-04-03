@@ -2,6 +2,39 @@ import re
 import json
 import httpx
 
+SCB_FH_URL = (
+    "https://api.scb.se/OV0104/v1/doris/sv/ssd/BO/BO0501/BO0501B/FastprisFHRegAr"
+)
+
+# Typical fritidshus living area used to convert average total price → kr/m².
+# SCB does not publish size-normalised prices for fritidshus.
+TYPICAL_SQM = 85
+
+# Fastighetsbyran URL county slug → SCB riksområde code
+COUNTY_TO_RIKS = {
+    "stockholms-lan":       "RIKS1",
+    "uppsala-lan":          "RIKS2",
+    "sodermanlands-lan":    "RIKS2",
+    "ostergotlands-lan":    "RIKS2",
+    "orebro-lan":           "RIKS2",
+    "vastmanlands-lan":     "RIKS2",
+    "jonkopings-lan":       "RIKS3",
+    "kronobergs-lan":       "RIKS3",
+    "kalmar-lan":           "RIKS3",
+    "gotlands-lan":         "RIKS3",
+    "blekinge-lan":         "RIKS4",
+    "skane-lan":            "RIKS4",
+    "hallands-lan":         "RIKS5",
+    "vastra-gotalands-lan": "RIKS5",
+    "varmlands-lan":        "RIKS6",
+    "dalarnas-lan":         "RIKS6",
+    "gavleborgs-lan":       "RIKS6",
+    "vasternorrlands-lan":  "RIKS7",
+    "jamtlands-lan":        "RIKS7",
+    "vasterbottens-lan":    "RIKS8",
+    "norrbottens-lan":      "RIKS8",
+}
+
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -104,6 +137,33 @@ def map_hoa(text: str) -> float:
     return -0.04
 
 
+def extract_county_slug(url: str) -> str | None:
+    m = re.search(r"/till-salu/([a-z]+(?:-[a-z]+)*-lan)/", url)
+    return m.group(1) if m else None
+
+
+def fetch_scb_median_psm(riks: str) -> int | None:
+    """Return estimated kr/m² for fritidshus in the given riksområde (latest year)."""
+    payload = {
+        "query": [
+            {"code": "Region",       "selection": {"filter": "item", "values": [riks]}},
+            {"code": "ContentsCode", "selection": {"filter": "item", "values": ["BO0501Q6"]}},
+            {"code": "Tid",          "selection": {"filter": "top",  "values": ["1"]}},
+        ],
+        "response": {"format": "json"},
+    }
+    try:
+        r = httpx.post(SCB_FH_URL, json=payload, timeout=10)
+        r.raise_for_status()
+        rows = r.json().get("data", [])
+        if rows:
+            avg_tkr = float(rows[0]["values"][0])
+            return round((avg_tkr * 1000) / TYPICAL_SQM)
+    except Exception:
+        pass
+    return None
+
+
 def parse_listing(url: str) -> dict:
     state = fetch_preloaded_state(url)
     obj_id = extract_objekt_id(url)
@@ -150,6 +210,14 @@ def parse_listing(url: str) -> dict:
     hoa_raw = find_in_posts(all_posts, "Väg och samfällighet")
     if hoa_raw:
         result["adj_hoa"] = map_hoa(hoa_raw)
+
+    # Regional median kr/m² from SCB (fritidshus average price ÷ typical sqm)
+    county_slug = extract_county_slug(url)
+    riks = COUNTY_TO_RIKS.get(county_slug or "")
+    if riks:
+        median_psm = fetch_scb_median_psm(riks)
+        if median_psm:
+            result["medianpsm"] = median_psm
 
     # Strip None values so the frontend knows which fields were found
     return {k: v for k, v in result.items() if v is not None}
