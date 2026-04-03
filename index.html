@@ -43,9 +43,21 @@
     }
 
     .container {
-      max-width: 760px;
+      max-width: 1260px;
       margin: 0 auto;
       padding: 2rem;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .result-col {
+      position: sticky;
+      top: 1.5rem;
     }
 
     .header {
@@ -311,12 +323,39 @@
       line-height: 1.5;
     }
 
+    #fetch-btn-el:hover:not(:disabled) { border-color: var(--border-emphasis); }
+    #fetch-btn-el:disabled { opacity: 0.5; cursor: default; }
+    .import-ok    { color: #3B6D11; }
+    .import-error { color: #A32D2D; }
+    .import-loading { color: var(--text-tertiary); }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      display: inline-block;
+      width: 12px; height: 12px;
+      border: 1.5px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: -1px;
+      margin-right: 5px;
+    }
+
+    /* Highlight fields populated from listing */
+    .field-imported { border-color: rgba(59,109,17,0.45) !important; }
+
+    @media (max-width: 960px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .result-col { position: static; }
+    }
+
     @media (max-width: 600px) {
       .container { padding: 1rem; }
       .grid-2 { grid-template-columns: 1fr; }
       .grid-3 { grid-template-columns: 1fr 1fr; }
       .factor-grid { grid-template-columns: 1fr; }
       .verdict-amount { font-size: 26px; }
+      #listing-url { font-size: 13px; }
     }
   </style>
 </head>
@@ -331,6 +370,28 @@
       </div>
       <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
     </header>
+
+    <div class="main-grid">
+    <div class="input-col">
+
+    <!-- Import from listing URL -->
+    <div class="card" id="import-card">
+      <div class="card-title" id="import-card-title">Hämta uppgifter från annons</div>
+      <div style="display:flex;gap:0.5rem;align-items:center">
+        <input type="url" id="listing-url"
+               placeholder="https://www.fastighetsbyran.com/…?objektID=…"
+               style="flex:1;border-radius:8px;border:0.5px solid var(--border-default);
+                      background:var(--bg-page);color:var(--text-primary);
+                      font-family:inherit;font-size:14px;padding:0.45rem 0.75rem;">
+        <button id="fetch-btn-el" onclick="fetchListing()"
+                style="flex-shrink:0;padding:0.45rem 1rem;font-family:inherit;
+                       font-size:14px;font-weight:500;color:var(--text-primary);
+                       background:var(--bg-surface);border:0.5px solid var(--border-default);
+                       border-radius:8px;cursor:pointer;white-space:nowrap;
+                       transition:border-color 0.12s, opacity 0.12s;">Hämta</button>
+      </div>
+      <p class="helper-note" id="import-status" style="min-height:1.2em"></p>
+    </div>
 
     <!-- Core inputs -->
     <div class="card">
@@ -475,6 +536,10 @@
       </div>
     </div>
 
+    </div><!-- /.input-col -->
+
+    <div class="result-col">
+
     <!-- Verdict card -->
     <div id="verdict-card" class="verdict-card">
       <div class="verdict-overline" id="verdict-overline">Uppskattat marknadsvärde</div>
@@ -512,6 +577,9 @@
 
     <div class="summary-note" id="summary-note"></div>
 
+    </div><!-- /.result-col -->
+    </div><!-- /.main-grid -->
+
   </div>
 
   <script>
@@ -523,6 +591,11 @@
         headerSub:      'Värderingsverktyg för fritidshus',
         headerNote:     'Anpassat för svenska fritidshus — gäller ej villor eller bostadsrätter.',
         langLabel:      'EN',
+        importCardTitle:'Hämta uppgifter från annons',
+        importBtn:      'Hämta',
+        importLoading:  'Hämtar annonsdata\u2026',
+        importOk:       function(n) { return 'Hittade ' + n + ' f\u00e4lt \u2014 kontrollera marknadsdata och kvalitativa justeringar manuellt.'; },
+        importError:    'Kunde inte h\u00e4mta annonsdata. Kontrollera URL:en.',
         cardCore:       'Grunduppgifter',
         labelAsking:    'Utgångspris (kr)',
         labelSqm:       'Boyta (m²)',
@@ -628,6 +701,11 @@
         headerSub:      'Fritidshus fair-value estimator',
         headerNote:     'Built for Swedish vacation properties only — not applicable to villas or bostadsrätter.',
         langLabel:      'SV',
+        importCardTitle:'Import from listing',
+        importBtn:      'Fetch',
+        importLoading:  'Fetching listing data\u2026',
+        importOk:       function(n) { return 'Populated ' + n + ' fields \u2014 check market data and qualitative adjustments manually.'; },
+        importError:    'Could not fetch listing. Check the URL.',
         cardCore:       'Core details',
         labelAsking:    'Asking price (kr)',
         labelSqm:       'Living area (m²)',
@@ -741,6 +819,9 @@
       document.getElementById('header-sub').textContent          = t('headerSub');
       document.getElementById('header-note').textContent         = t('headerNote');
       document.getElementById('lang-btn').textContent            = t('langLabel');
+
+      document.getElementById('import-card-title').textContent   = t('importCardTitle');
+      document.getElementById('fetch-btn-el').textContent        = t('importBtn');
 
       document.getElementById('card-core-title').textContent     = t('cardCore');
       document.getElementById('label-asking').textContent        = t('labelAsking');
@@ -896,6 +977,103 @@
       while (parent.firstChild) parent.removeChild(parent.firstChild);
       children.forEach(function(c) { if (c) parent.appendChild(c); });
     }
+
+    /* ── Listing importer ── */
+    var NUMERIC_FIELDS  = ['asking', 'sqm', 'plot', 'buildyear', 'taxval', 'opex'];
+    var DROPDOWN_FIELDS = ['adj_energy', 'adj_heating', 'adj_hoa'];
+
+    function setImportStatus(cls, text) {
+      var el = document.getElementById('import-status');
+      el.className = 'helper-note ' + cls;
+      el.textContent = text;
+    }
+
+    function markImported(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.classList.add('field-imported');
+        el.addEventListener('input', function() { el.classList.remove('field-imported'); }, { once: true });
+      }
+    }
+
+    function snapSelect(id, value) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var best = null, bestDist = Infinity;
+      for (var i = 0; i < el.options.length; i++) {
+        var d = Math.abs(parseFloat(el.options[i].value) - value);
+        if (d < bestDist) { bestDist = d; best = el.options[i]; }
+      }
+      if (best) best.selected = true;
+    }
+
+    async function fetchListing() {
+      var url = document.getElementById('listing-url').value.trim();
+      if (!url) return;
+
+      var btn = document.getElementById('fetch-btn-el');
+      var originalText = btn.textContent;
+
+      // Show loading state immediately
+      btn.disabled = true;
+      var spinEl = document.createElement('span');
+      spinEl.className = 'spinner';
+      btn.textContent = t('importLoading');
+      btn.prepend(spinEl);
+      setImportStatus('import-loading', '');
+
+      // Clear previous import highlights
+      NUMERIC_FIELDS.concat(DROPDOWN_FIELDS).forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('field-imported');
+      });
+
+      try {
+        var res = await fetch('/api/parse?url=' + encodeURIComponent(url));
+        if (!res.ok) {
+          var err = await res.json().catch(function() { return {}; });
+          setImportStatus('import-error', t('importError') + (err.detail ? ' (' + err.detail + ')' : ''));
+          document.getElementById('header-sub').textContent = t('headerSub');
+          return;
+        }
+        var data = await res.json();
+        var populated = 0;
+
+        NUMERIC_FIELDS.forEach(function(id) {
+          if (data[id] != null) {
+            document.getElementById(id).value = data[id];
+            markImported(id);
+            populated++;
+          }
+        });
+
+        DROPDOWN_FIELDS.forEach(function(id) {
+          if (data[id] != null) {
+            snapSelect(id, data[id]);
+            markImported(id);
+            populated++;
+          }
+        });
+
+        // Update header to show property address
+        if (data.title) {
+          document.getElementById('header-sub').textContent = data.title;
+        }
+
+        recalc();
+        setImportStatus('import-ok', t('importOk')(populated));
+      } catch (e) {
+        setImportStatus('import-error', t('importError') + ' (' + e.message + ')');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
+    /* Allow pressing Enter in the URL input */
+    document.getElementById('listing-url').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') fetchListing();
+    });
 
     /* ── Main calculation ── */
     function recalc() {
