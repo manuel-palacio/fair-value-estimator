@@ -449,6 +449,29 @@
             <option value="-0.05">Sjunkande</option>
           </select>
         </label>
+        <label>
+          <span class="label-text" id="label-heating">Uppvärmningssystem</span>
+          <select id="adj_heating" onchange="recalc()">
+            <option value="-0.05">Direktverkande el</option>
+            <option value="-0.03">Olja / pellets</option>
+            <option value="0.02" selected>Luft/luft värmepump</option>
+            <option value="0.04">Luft/vatten värmepump</option>
+            <option value="0.06">Bergvärme</option>
+            <option value="0.03">Fjärrvärme</option>
+          </select>
+        </label>
+        <label>
+          <span class="label-text" id="label-energy">Energiklass</span>
+          <select id="adj_energy" onchange="recalc()">
+            <option value="-0.06">G — mer än 200 kWh/m²/år</option>
+            <option value="-0.04">F — 151–200 kWh/m²/år</option>
+            <option value="-0.02">E — 126–150 kWh/m²/år</option>
+            <option value="0" selected>D — 101–125 kWh/m²/år</option>
+            <option value="0.02">C — 76–100 kWh/m²/år</option>
+            <option value="0.04">B — 51–75 kWh/m²/år</option>
+            <option value="0.06">A — max 50 kWh/m²/år</option>
+          </select>
+        </label>
       </div>
     </div>
 
@@ -564,10 +587,27 @@
         fDist:  'Stadsavstånd',
         fOpex:  'Driftkostnader',
         fMom:   'Marknadsutveckling',
-        fAge:   'Åldersbonus/-avdrag',
-        fPlot:  'Tomtpremie',
-        fYield: 'Driftkostnadsjustering',
-        fCycle: 'Konjunkturläge',
+        fAge:     'Åldersbonus/-avdrag',
+        fPlot:    'Tomtpremie',
+        fYield:   'Driftkostnadsjustering',
+        fCycle:   'Konjunkturläge',
+        fHeating: 'Uppvärmningssystem',
+        fEnergy:  'Energiklass',
+        labelHeating: 'Uppvärmningssystem',
+        labelEnergy:  'Energiklass',
+        he_el:   'Direktverkande el',
+        he_oil:  'Olja / pellets',
+        he_ll:   'Luft/luft värmepump',
+        he_lv:   'Luft/vatten värmepump',
+        he_berg: 'Bergvärme',
+        he_fj:   'Fjärrvärme',
+        en_G: 'G — mer än 200 kWh/m²/år',
+        en_F: 'F — 151–200 kWh/m²/år',
+        en_E: 'E — 126–150 kWh/m²/år',
+        en_D: 'D — 101–125 kWh/m²/år',
+        en_C: 'C — 76–100 kWh/m²/år',
+        en_B: 'B — 51–75 kWh/m²/år',
+        en_A: 'A — max 50 kWh/m²/år',
         vOver:  'Övervärderat',
         vHigh:  'Något högt',
         vFair:  'Rättvist prissatt',
@@ -652,10 +692,27 @@
         fDist:  'City distance',
         fOpex:  'Running costs',
         fMom:   'Market momentum',
-        fAge:   'Age bonus/penalty',
-        fPlot:  'Plot premium',
-        fYield: 'Yield check',
-        fCycle: 'Cycle position',
+        fAge:     'Age bonus/penalty',
+        fPlot:    'Plot premium',
+        fYield:   'Yield check',
+        fCycle:   'Cycle position',
+        fHeating: 'Heating system',
+        fEnergy:  'Energy class',
+        labelHeating: 'Heating system',
+        labelEnergy:  'Energy class',
+        he_el:   'Direct electric heating',
+        he_oil:  'Oil / pellets',
+        he_ll:   'Air-to-air heat pump',
+        he_lv:   'Air-to-water heat pump',
+        he_berg: 'Ground source heat pump',
+        he_fj:   'District heating',
+        en_G: 'G — over 200 kWh/m²/yr',
+        en_F: 'F — 151–200 kWh/m²/yr',
+        en_E: 'E — 126–150 kWh/m²/yr',
+        en_D: 'D — 101–125 kWh/m²/yr',
+        en_C: 'C — 76–100 kWh/m²/yr',
+        en_B: 'B — 51–75 kWh/m²/yr',
+        en_A: 'A — max 50 kWh/m²/yr',
         vOver:  'Overvalued',
         vHigh:  'Slightly high',
         vFair:  'Fairly priced',
@@ -749,6 +806,25 @@
       m.options[2].textContent = t('msoft');
       m.options[3].textContent = t('mfall');
 
+      document.getElementById('label-heating').textContent = t('labelHeating');
+      var ht = document.getElementById('adj_heating');
+      ht.options[0].textContent = t('he_el');
+      ht.options[1].textContent = t('he_oil');
+      ht.options[2].textContent = t('he_ll');
+      ht.options[3].textContent = t('he_lv');
+      ht.options[4].textContent = t('he_berg');
+      ht.options[5].textContent = t('he_fj');
+
+      document.getElementById('label-energy').textContent = t('labelEnergy');
+      var en = document.getElementById('adj_energy');
+      en.options[0].textContent = t('en_G');
+      en.options[1].textContent = t('en_F');
+      en.options[2].textContent = t('en_E');
+      en.options[3].textContent = t('en_D');
+      en.options[4].textContent = t('en_C');
+      en.options[5].textContent = t('en_B');
+      en.options[6].textContent = t('en_A');
+
       document.getElementById('verdict-overline').textContent    = t('verdictOverline');
       document.getElementById('mt-label-asking-psm').textContent = t('labelAskingPsm');
       document.getElementById('mt-label-fair-psm').textContent   = t('labelFairPsm');
@@ -838,8 +914,10 @@
       var adj_infra = sel('adj_infra');
       var adj_cond  = sel('adj_cond');
       var adj_dist  = sel('adj_dist');
-      var adj_hoa   = sel('adj_hoa');
-      var adj_mom   = sel('adj_mom');
+      var adj_hoa     = sel('adj_hoa');
+      var adj_mom     = sel('adj_mom');
+      var adj_heating = sel('adj_heating');
+      var adj_energy  = sel('adj_energy');
 
       if (!asking || !sqm) return;
 
@@ -860,7 +938,8 @@
       /* Signal 1 — Comparable/m² */
       var baseCompPsm = (medianpsm + newbuild) * cycleidx;
       var qualAdj = 1 + adj_water + adj_infra + adj_cond + adj_dist
-                      + adj_hoa + adj_mom + age + plotBon;
+                      + adj_hoa + adj_mom + age + plotBon
+                      + adj_heating + adj_energy;
       var compValue = baseCompPsm * qualAdj * sqm;
 
       /* Signal 2 — Tax assessment with peak-year dampening */
@@ -965,8 +1044,10 @@
         { name: t('fMom'),   val: adj_mom,          isInfo: false },
         { name: t('fAge'),   val: age,              isInfo: false },
         { name: t('fPlot'),  val: plotBon,          isInfo: false },
-        { name: t('fYield'), val: yieldAdj,         isInfo: false },
-        { name: t('fCycle'), val: cycleidx - 1.0,   isInfo: false }
+        { name: t('fYield'),   val: yieldAdj,        isInfo: false },
+        { name: t('fCycle'),   val: cycleidx - 1.0, isInfo: false },
+        { name: t('fHeating'), val: adj_heating,    isInfo: false },
+        { name: t('fEnergy'),  val: adj_energy,     isInfo: false }
       ];
 
       var factorTiles = factors.map(function(f) {
