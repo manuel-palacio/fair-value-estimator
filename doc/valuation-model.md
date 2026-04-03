@@ -13,7 +13,7 @@ fairValue ×= (1 + yieldAdj)
 
 ## Signal 1 — Comparable/m² (40%)
 
-Market price per sqm derived from recent comparable sales, adjusted for cycle and property quality.
+Market price per sqm based on a user-supplied median for the area, adjusted for cycle and property quality. The median is entered manually — typically sourced from recent sales in Hemnet or municipal statistics.
 
 ```
 compValue = (medianPsm + newbuildPremium) × cycleIndex × qualAdj × sqm
