@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bovärdare — Swedish property fair-value estimator</title>
+  <style>
+    :root {
+      --bg-page: #f5f5f2;
+      --bg-card: #ffffff;
+      --bg-surface: #f0efe9;
+      --text-primary: #1a1a18;
+      --text-secondary: #5f5e5a;
+      --text-tertiary: #888780;
+      --border-default: rgba(0,0,0,0.12);
+      --border-emphasis: rgba(0,0,0,0.25);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-page: #1a1a18;
+        --bg-card: #242422;
+        --bg-surface: #2e2e2b;
+        --text-primary: #f0ede6;
+        --text-secondary: #a8a69f;
+        --text-tertiary: #6e6d69;
+        --border-default: rgba(255,255,255,0.10);
+        --border-emphasis: rgba(255,255,255,0.20);
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      font-weight: 400;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .header {
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 0.5px solid var(--border-default);
+    }
+
+    .header h1 {
+      font-size: 26px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 0.2rem;
+    }
+
+    .type-toggle {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .type-btn {
+      flex: 1;
+      padding: 0.45rem 1rem;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-tertiary);
+      background: var(--bg-card);
+      border: 0.5px solid var(--border-default);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: color 0.12s, border-color 0.12s;
+      text-align: center;
+    }
+
+    .type-btn.active {
+      color: var(--text-primary);
+      border-color: var(--border-emphasis);
+      font-weight: 500;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 0.5px solid var(--border-default);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-tertiary);
+      margin-bottom: 0.85rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+
+    label { display: block; }
+
+    .label-text {
+      display: block;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 0.3rem;
+    }
+
+    input[type="number"],
+    select {
+      width: 100%;
+      font-family: inherit;
+      font-size: 15px;
+      color: var(--text-primary);
+      background: var(--bg-page);
+      border: 0.5px solid var(--border-default);
+      border-radius: 8px;
+      padding: 0.45rem 0.75rem;
+      transition: border-color 0.12s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="number"]:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--border-emphasis);
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888780' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.8rem center;
+      padding-right: 2.25rem;
+      cursor: pointer;
+    }
+
+    .metric-tile {
+      background: var(--bg-surface);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+    }
+
+    .metric-tile-label {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      margin-bottom: 0.1rem;
+    }
+
+    .metric-tile-value {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text-primary);
+      line-height: 1.2;
+    }
+
+    .verdict-card {
+      border-radius: 12px;
+      border: 0.5px solid transparent;
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 1rem;
+      transition: background 0.25s, border-color 0.25s, color 0.25s;
+    }
+
+    .verdict-overline {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.65;
+      margin-bottom: 0.2rem;
+    }
+
+    .verdict-amount {
+      font-size: 32px;
+      font-weight: 500;
+      line-height: 1.1;
+      margin-bottom: 0.3rem;
+    }
+
+    .verdict-desc {
+      font-size: 14px;
+      opacity: 0.8;
+      line-height: 1.5;
+    }
+
+    .signal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .signal-row { display: flex; flex-direction: column; gap: 0.25rem; }
+
+    .signal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .signal-name {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .signal-right {
+      display: flex;
+      gap: 0.6rem;
+      align-items: baseline;
+    }
+
+    .signal-kr {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .signal-delta {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 5px;
+      background: var(--bg-surface);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .factor-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+    }
+
+    .factor-tile {
+      border-radius: 8px;
+      padding: 0.55rem 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .factor-name {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .factor-val {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .summary-note {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      line-height: 1.6;
+      margin-top: 0.5rem;
+    }
+
+    .helper-note {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      margin-top: 0.6rem;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 600px) {
+      .container { padding: 1rem; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-3 { grid-template-columns: 1fr 1fr; }
+      .factor-grid { grid-template-columns: 1fr; }
+      .verdict-amount { font-size: 26px; }
+      .type-btn { font-size: 13px; padding: 0.4rem 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="header">
+      <h1>Bovärdare</h1>
+      <p>Swedish property fair-value estimator</p>
+    </header>
+
+    <div class="type-toggle">
+      <button class="type-btn active" data-type="fritidshus" onclick="setPropType('fritidshus')">Fritidshus</button>
+      <button class="type-btn" data-type="villa" onclick="setPropType('villa')">Villa</button>
+      <button class="type-btn" data-type="bostadsratt" onclick="setPropType('bostadsratt')">Bostadsrätt</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Core details</div>
+      <div class="grid-2">
+        <label>
+          <span class="label-text">Asking price (kr)</span>
+          <input type="number" id="asking" value="3295000" oninput="recalc()">
+        </label>
+        <label>
+          <span class="label-text">Living area (m²)</span>
+          <input type="number" id="sqm" value="105" oninput="recalc()">
+        </label>
+        <label>
+          <span class="label-text">Tax assessment value — taxeringsvärde (kr)</span>
+          <input type="number" id="taxval" value="2845000" oninput="recalc()">
+        </label>
+        <label>
+          <span class="label-text">Year built</span>
+          <input type="number" id="buildyear" value="2022" oninput="recalc()">
+        </label>
+        <label>
+          <span class="label-text">Annual running cost (kr/year)</span>
+          <input type="number" id="opex" value="17683" oninput="recalc()">
+        </label>
+        <label>
+          <span class="label-text">Plot size (m²)</span>
+          <input type="number" id="plot" value="2153" oninput="recalc()">
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Market comparables</div>
+      <div class="grid-2">
+        <label>
+          <span class="label-text">Area median price (kr/m²)</span>
+          <input type="number" id="medianpsm" value="26000" oninput="recalc()">
+        </label>
+        <label>
+          <span class="label-text">New-build premium (kr/m²)</span>
+          <input type="number" id="newbuild" value="4000" oninput="recalc()">
+        </label>
+        <label>
+          <span class="label-text">Peak market price (kr/m²)</span>
+          <input type="number" id="peakpsm" value="35000" oninput="recalc()">
+        </label>
+        <label>
+          <span class="label-text">Market cycle index</span>
+          <select id="cycleidx" onchange="recalc()">
+            <option value="0.88">-12% — Post-peak, weak</option>
+            <option value="0.92" selected>-8% — Soft recovery</option>
+            <option value="0.96">-4% — Recovering</option>
+            <option value="1.00">0% — At peak</option>
+            <option value="1.05">+5% — Above peak</option>
+          </select>
+        </label>
+      </div>
+      <p class="helper-note">Area median = recent comparable sales in the same municipality. Set new-build premium to 0 for older properties.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Qualitative adjustments</div>
+      <div class="grid-2">
+        <label>
+          <span class="label-text">Water / beach access</span>
+          <select id="adj_water" onchange="recalc()">
+            <option value="0">None</option>
+            <option value="0.05" selected>Shared / walking distance</option>
+            <option value="0.12">Direct frontage</option>
+          </select>
+        </label>
+        <label>
+          <span class="label-text">Infrastructure (VA + fiber)</span>
+          <select id="adj_infra" onchange="recalc()">
+            <option value="-0.03">Neither</option>
+            <option value="0">Partial</option>
+            <option value="0.03" selected>Full</option>
+          </select>
+        </label>
+        <label>
+          <span class="label-text">Condition</span>
+          <select id="adj_cond" onchange="recalc()">
+            <option value="-0.10">Needs full renovation</option>
+            <option value="-0.04">Some work needed</option>
+            <option value="0.02" selected>New / move-in ready</option>
+          </select>
+        </label>
+        <label>
+          <span class="label-text">Distance to major city</span>
+          <select id="adj_dist" onchange="recalc()">
+            <option value="0.04">Less than 1 hour</option>
+            <option value="0.01" selected>1–2 hours</option>
+            <option value="-0.03">2–3 hours</option>
+            <option value="-0.07">More than 3 hours</option>
+          </select>
+        </label>
+        <label>
+          <span class="label-text">HOA / samfällighet fee</span>
+          <select id="adj_hoa" onchange="recalc()">
+            <option value="0.02">Less than 5,000 kr/year</option>
+            <option value="0">5,000–10,000 kr/year</option>
+            <option value="-0.02" selected>10,000–15,000 kr/year</option>
+            <option value="-0.04">More than 15,000 kr/year</option>
+          </select>
+        </label>
+        <label>
+          <span class="label-text">Local market momentum</span>
+          <select id="adj_mom" onchange="recalc()">
+            <option value="0.03">Rising more than +5% YoY</option>
+            <option value="0.01">Flat ±5%</option>
+            <option value="-0.02" selected>Soft / post-peak</option>
+            <option value="-0.05">Falling</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <!-- Verdict card -->
+    <div id="verdict-card" class="verdict-card">
+      <div class="verdict-overline" id="verdict-overline">Estimated fair value</div>
+      <div class="verdict-amount" id="verdict-amount">—</div>
+      <div class="verdict-desc" id="verdict-desc">Enter values above to calculate.</div>
+    </div>
+
+    <!-- Metric tiles -->
+    <div class="grid-3">
+      <div class="metric-tile">
+        <div class="metric-tile-label">Asking price/m²</div>
+        <div class="metric-tile-value" id="m-asking-psm">—</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-tile-label">Fair value/m²</div>
+        <div class="metric-tile-value" id="m-fair-psm">—</div>
+      </div>
+      <div class="metric-tile">
+        <div class="metric-tile-label">Tax value ratio</div>
+        <div class="metric-tile-value" id="m-tax-ratio">—</div>
+      </div>
+    </div>
+
+    <!-- Signal breakdown -->
+    <div class="card">
+      <div class="card-title">Signal breakdown</div>
+      <div class="signal-list" id="signal-list"></div>
+    </div>
+
+    <!-- Adjustment factors -->
+    <div class="card">
+      <div class="card-title">Adjustment factors</div>
+      <div class="factor-grid" id="factor-grid"></div>
+    </div>
+
+    <div class="summary-note" id="summary-note"></div>
+
+  </div>
+
+  <script>
+    var propType = 'fritidshus';
+
+    function setPropType(t) {
+      propType = t;
+      document.querySelectorAll('.type-btn').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.type === t);
+      });
+      recalc();
+    }
+
+    function fmtKr(n) {
+      return Math.round(n).toLocaleString('sv-SE') + '\u00a0kr';
+    }
+
+    function fmtPsm(n) {
+      return Math.round(n).toLocaleString('sv-SE') + '\u00a0kr/m\u00b2';
+    }
+
+    function fmtPct(n, d) {
+      d = d === undefined ? 1 : d;
+      return (n >= 0 ? '+' : '') + n.toFixed(d) + '%';
+    }
+
+    function fmtRatio(n) {
+      return n.toFixed(2) + '\u00d7';
+    }
+
+    function num(id) {
+      return parseFloat(document.getElementById(id).value) || 0;
+    }
+
+    function sel(id) {
+      return parseFloat(document.getElementById(id).value);
+    }
+
+    function ageAdj(yr) {
+      var age = 2026 - yr;
+      if (age <= 2)  return  0.03;
+      if (age <= 5)  return  0.01;
+      if (age <= 15) return  0;
+      if (age <= 30) return -0.03;
+      return -0.07;
+    }
+
+    /* Build a DOM element with properties and children */
+    function el(tag, props, children) {
+      var e = document.createElement(tag);
+      if (props) {
+        Object.keys(props).forEach(function(k) {
+          if (k === 'style') {
+            Object.assign(e.style, props[k]);
+          } else if (k === 'className') {
+            e.className = props[k];
+          } else {
+            e[k] = props[k];
+          }
+        });
+      }
+      if (children) {
+        children.forEach(function(c) {
+          if (c == null) return;
+          if (typeof c === 'string') {
+            e.appendChild(document.createTextNode(c));
+          } else {
+            e.appendChild(c);
+          }
+        });
+      }
+      return e;
+    }
+
+    function setChildren(parent, children) {
+      while (parent.firstChild) parent.removeChild(parent.firstChild);
+      children.forEach(function(c) {
+        if (c) parent.appendChild(c);
+      });
+    }
+
+    function recalc() {
+      var asking    = num('asking');
+      var sqm       = num('sqm');
+      var taxval    = num('taxval');
+      var buildyear = num('buildyear');
+      var opex      = num('opex');
+      var plot      = num('plot');
+      var medianpsm = num('medianpsm');
+      var newbuild  = num('newbuild');
+      var peakpsm   = num('peakpsm');
+      var cycleidx  = sel('cycleidx');
+
+      var adj_water = sel('adj_water');
+      var adj_infra = sel('adj_infra');
+      var adj_cond  = sel('adj_cond');
+      var adj_dist  = sel('adj_dist');
+      var adj_hoa   = sel('adj_hoa');
+      var adj_mom   = sel('adj_mom');
+
+      if (!asking || !sqm) return;
+
+      /* Derived adjustments */
+      var age      = ageAdj(buildyear);
+      var plotBon  = Math.min(plot / 10000, 0.08);
+
+      var costRatio = opex / asking;
+      var yieldAdj;
+      if (costRatio > 0.008)      yieldAdj = -0.04;
+      else if (costRatio > 0.005) yieldAdj = -0.01;
+      else                        yieldAdj =  0.01;
+
+      /* Signal 1 — Comparable/m² */
+      var baseCompPsm = (medianpsm + newbuild) * cycleidx;
+      var qualAdj = 1 + adj_water + adj_infra + adj_cond + adj_dist
+                      + adj_hoa + adj_mom + age + plotBon;
+      var compValue = baseCompPsm * qualAdj * sqm;
+
+      /* Signal 2 — Tax assessment */
+      var taxMultiplier = (propType === 'bostadsratt') ? 0 : (1 / 0.75);
+      var taxValue = taxval * taxMultiplier;
+
+      /* Signal 3 — Peak-cycle adjusted */
+      var peakValue = peakpsm * cycleidx * sqm;
+
+      /* Weights */
+      var w1, w2, w3;
+      if (propType === 'fritidshus') { w1 = 0.40; w2 = 0.35; w3 = 0.25; }
+      else if (propType === 'villa') { w1 = 0.40; w2 = 0.40; w3 = 0.20; }
+      else                           { w1 = 0.60; w2 = 0.00; w3 = 0.40; }
+
+      /* Blended fair value */
+      var fairVal;
+      if (propType === 'bostadsratt') {
+        fairVal = compValue * 0.60 + peakValue * 0.40;
+      } else {
+        fairVal = compValue * w1 + taxValue * w2 + peakValue * w3;
+      }
+      fairVal *= (1 + yieldAdj);
+
+      /* Verdict */
+      var gap    = (asking - fairVal) / fairVal;
+      var gapPct = gap * 100;
+
+      var vLabel, vColor, vBg;
+      if (gap > 0.15) {
+        vLabel = 'Overvalued';      vColor = '#A32D2D'; vBg = '#A32D2D12';
+      } else if (gap > 0.05) {
+        vLabel = 'Slightly high';   vColor = '#BA7517'; vBg = '#BA751712';
+      } else if (gap > -0.05) {
+        vLabel = 'Fairly priced';   vColor = '#3B6D11'; vBg = '#3B6D1112';
+      } else if (gap > -0.15) {
+        vLabel = 'Potential value'; vColor = '#185FA5'; vBg = '#185FA512';
+      } else {
+        vLabel = 'Undervalued';     vColor = '#185FA5'; vBg = '#185FA512';
+      }
+
+      var diffKr   = asking - fairVal;
+      var diffSign = diffKr >= 0 ? '+' : '';
+
+      /* ── Verdict card ── */
+      var vc = document.getElementById('verdict-card');
+      vc.style.background  = vBg;
+      vc.style.borderColor = vColor + '38';
+      vc.style.color       = vColor;
+      document.getElementById('verdict-amount').textContent =
+        fmtKr(fairVal);
+      document.getElementById('verdict-desc').textContent =
+        vLabel + ' \u2014 asking is ' + fmtPct(gapPct) +
+        ' (' + diffSign + fmtKr(diffKr) + ') vs estimated fair value';
+
+      /* ── Metric tiles ── */
+      document.getElementById('m-asking-psm').textContent =
+        sqm > 0 ? fmtPsm(asking / sqm) : '\u2014';
+      document.getElementById('m-fair-psm').textContent =
+        sqm > 0 ? fmtPsm(fairVal / sqm) : '\u2014';
+      document.getElementById('m-tax-ratio').textContent =
+        taxval > 0 ? fmtRatio(asking / taxval) : '\u2014';
+
+      /* ── Signal bars ── */
+      var signals = [
+        {
+          name: 'Asking price (baseline)',
+          value: asking,
+          color: '#888780',
+          weight: null
+        },
+        {
+          name: 'Comparable/m\u00b2 \u2014 ' + Math.round(w1 * 100) + '%',
+          value: compValue,
+          color: '#185FA5',
+          weight: w1
+        }
+      ];
+      if (propType !== 'bostadsratt') {
+        signals.push({
+          name: 'Tax assessment \u2014 ' + Math.round(w2 * 100) + '%',
+          value: taxValue,
+          color: '#3B6D11',
+          weight: w2
+        });
+      }
+      signals.push({
+        name: 'Peak-cycle adjusted \u2014 ' + Math.round(w3 * 100) + '%',
+        value: peakValue,
+        color: '#BA7517',
+        weight: w3
+      });
+
+      var maxSig = Math.max.apply(null, signals.map(function(s) { return s.value; }));
+
+      var signalRows = signals.map(function(s) {
+        var barPct = maxSig > 0 ? (s.value / maxSig * 100).toFixed(1) : '0';
+        var head = el('div', { className: 'signal-head' }, [
+          el('span', { className: 'signal-name' }, [s.name]),
+          el('div', { className: 'signal-right' }, [
+            el('span', { className: 'signal-kr' }, [fmtKr(s.value)]),
+            s.weight !== null
+              ? el('span', { className: 'signal-delta' }, [
+                  fmtPct((s.value - asking) / asking * 100)
+                ])
+              : null
+          ])
+        ]);
+        var fill = el('div', { className: 'bar-fill' }, []);
+        fill.style.width      = barPct + '%';
+        fill.style.background = s.color;
+        var track = el('div', { className: 'bar-track' }, [fill]);
+        return el('div', { className: 'signal-row' }, [head, track]);
+      });
+
+      setChildren(document.getElementById('signal-list'), signalRows);
+
+      /* ── Factor grid ── */
+      var factors = [
+        { name: 'Water access',      val: adj_water, isInfo: false },
+        { name: 'Infrastructure',    val: adj_infra,  isInfo: false },
+        { name: 'Condition',         val: adj_cond,   isInfo: false },
+        { name: 'City distance',     val: adj_dist,   isInfo: false },
+        { name: 'Running costs',     val: null,       isInfo: true,
+          label: (costRatio * 100).toFixed(2) + '% of asking' },
+        { name: 'Market momentum',   val: adj_mom,    isInfo: false },
+        { name: 'Age bonus/penalty', val: age,        isInfo: false },
+        { name: 'Plot premium',      val: plotBon,    isInfo: false },
+        { name: 'Yield check',       val: yieldAdj,   isInfo: false },
+        { name: 'Cycle position',    val: cycleidx - 1, isInfo: false }
+      ];
+
+      var factorTiles = factors.map(function(f) {
+        var bg, color, label;
+        if (f.isInfo) {
+          bg    = 'var(--bg-surface)';
+          color = 'var(--text-secondary)';
+          label = f.label;
+        } else if (f.val > 0) {
+          bg    = '#3B6D1112';
+          color = '#3B6D11';
+          label = fmtPct(f.val * 100);
+        } else if (f.val < 0) {
+          bg    = '#A32D2D12';
+          color = '#A32D2D';
+          label = fmtPct(f.val * 100);
+        } else {
+          bg    = 'var(--bg-surface)';
+          color = 'var(--text-tertiary)';
+          label = fmtPct(0);
+        }
+        var nameEl = el('span', { className: 'factor-name' }, [f.name]);
+        var valEl  = el('span', { className: 'factor-val' }, [label]);
+        valEl.style.color = color;
+        var tile = el('div', { className: 'factor-tile' }, [nameEl, valEl]);
+        tile.style.background = bg;
+        return tile;
+      });
+
+      setChildren(document.getElementById('factor-grid'), factorTiles);
+
+      /* ── Summary note ── */
+      var negRoom   = -diffKr;
+      var negAbs    = Math.abs(negRoom);
+      var negSign   = negRoom >= 0 ? '' : '\u2212';
+      var negPctAbs = Math.abs(gapPct).toFixed(1);
+      document.getElementById('summary-note').textContent =
+        'Fair value: ' + fmtKr(fairVal) +
+        '  \u00b7  Running cost burden: ' + (costRatio * 100).toFixed(2) + '% of asking price' +
+        '  \u00b7  Implied negotiation room: ' + negSign + fmtKr(negAbs) +
+        ' (' + negSign + negPctAbs + '%)' +
+        '  \u00b7  Model-based estimate only \u2014 not a professional appraisal.';
+    }
+
+    recalc();
+  </script>
+</body>
+</html>
