@@ -390,6 +390,7 @@
                        border-radius:8px;cursor:pointer;white-space:nowrap;
                        transition:border-color 0.12s, opacity 0.12s;">Hämta</button>
       </div>
+      <p class="helper-note" id="import-source-note" style="margin-bottom:0.25rem">Stöds för närvarande: Fastighetsbyran.com</p>
       <p class="helper-note" id="import-status" style="min-height:1.2em"></p>
     </div>
 
@@ -592,6 +593,7 @@
         headerNote:     'Anpassat för svenska fritidshus — gäller ej villor eller bostadsrätter.',
         langLabel:      'EN',
         importCardTitle:'Hämta uppgifter från annons',
+        importSourceNote:'Stöds för närvarande: Fastighetsbyran.com',
         importBtn:      'Hämta',
         importLoading:  'Hämtar annonsdata\u2026',
         importOk:       function(n) { return 'Hittade ' + n + ' f\u00e4lt \u2014 kontrollera marknadsdata och kvalitativa justeringar manuellt.'; },
@@ -702,6 +704,7 @@
         headerNote:     'Built for Swedish vacation properties only — not applicable to villas or bostadsrätter.',
         langLabel:      'SV',
         importCardTitle:'Import from listing',
+        importSourceNote:'Currently supported: Fastighetsbyran.com',
         importBtn:      'Fetch',
         importLoading:  'Fetching listing data\u2026',
         importOk:       function(n) { return 'Populated ' + n + ' fields \u2014 check market data and qualitative adjustments manually.'; },
@@ -821,6 +824,7 @@
       document.getElementById('lang-btn').textContent            = t('langLabel');
 
       document.getElementById('import-card-title').textContent   = t('importCardTitle');
+      document.getElementById('import-source-note').textContent  = t('importSourceNote');
       document.getElementById('fetch-btn-el').textContent        = t('importBtn');
 
       document.getElementById('card-core-title').textContent     = t('cardCore');
