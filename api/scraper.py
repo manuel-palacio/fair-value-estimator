@@ -181,10 +181,6 @@ def parse_listing(url: str) -> dict:
     tomt_raw = basfakta.get("tomtArea", "")
     plot = int(re.sub(r"\D", "", tomt_raw)) if tomt_raw else None
 
-    address = basfakta.get("gatuadress", "")
-    municipality = root.get("kommunNamn", "")
-    title = ", ".join(filter(None, [address, municipality])) or None
-
     result: dict = {
         "asking":    basfakta.get("oformateratPris"),
         "sqm":       basfakta.get("oformateradArea"),
@@ -192,7 +188,8 @@ def parse_listing(url: str) -> dict:
         "buildyear": int(basfakta["byggnadsAar"]) if basfakta.get("byggnadsAar") else None,
         "taxval":    root.get("taxeringsvaerde"),
         "opex":      fakta.get("totalDriftskostnad"),
-        "title":     title,
+        "address":   basfakta.get("gatuadress") or None,
+        "area":      basfakta.get("zon") or None,
     }
 
     # Energy class → adj_energy

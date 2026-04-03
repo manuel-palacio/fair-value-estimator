@@ -344,6 +344,42 @@
     /* Highlight fields populated from listing */
     .field-imported { border-color: rgba(59,109,17,0.45) !important; }
 
+    /* Recent valuations history */
+    .history-title {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-tertiary);
+      margin-top: 0.85rem;
+      margin-bottom: 0.4rem;
+    }
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.1s;
+      gap: 0.5rem;
+    }
+    .history-item:hover { background: var(--bg-surface); }
+    .history-item-label { font-size: 13px; color: var(--text-primary); line-height: 1.3; }
+    .history-item-sub   { font-size: 12px; color: var(--text-tertiary); }
+    .history-item-del   {
+      flex-shrink: 0;
+      font-size: 14px;
+      color: var(--text-tertiary);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0 0.2rem;
+      line-height: 1;
+      opacity: 0.5;
+    }
+    .history-item-del:hover { opacity: 1; color: #A32D2D; }
+
     @media (max-width: 960px) {
       .main-grid { grid-template-columns: 1fr; }
       .result-col { position: static; }
@@ -367,6 +403,11 @@
         <h1>Bovärdare</h1>
         <p class="header-sub" id="header-sub">Värderingsverktyg för fritidshus</p>
         <p class="header-note" id="header-note">Anpassat för svenska fritidshus — gäller ej villor eller bostadsrätter.</p>
+        <div id="property-header" style="display:none;margin-top:0.75rem;padding-top:0.75rem;border-top:0.5px solid var(--border-default)">
+          <p style="font-size:12px;color:var(--text-tertiary);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:0.2rem" id="property-header-label">Värdering för</p>
+          <p style="font-size:16px;font-weight:500;color:var(--text-primary);line-height:1.3" id="property-area"></p>
+          <p style="font-size:14px;color:var(--text-secondary)" id="property-address"></p>
+        </div>
       </div>
       <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
     </header>
@@ -392,6 +433,7 @@
       </div>
       <p class="helper-note" id="import-source-note" style="margin-bottom:0.25rem">Stöds för närvarande: Fastighetsbyran.com</p>
       <p class="helper-note" id="import-status" style="min-height:1.2em"></p>
+      <div id="history-list"></div>
     </div>
 
     <!-- Core inputs -->
@@ -593,6 +635,8 @@
         headerSub:      'Värderingsverktyg för fritidshus',
         headerNote:     'Anpassat för svenska fritidshus — gäller ej villor eller bostadsrätter.',
         langLabel:      'EN',
+        propertyHeaderLabel: 'Värdering för',
+        historyTitle:        'Tidigare värderingar',
         importCardTitle:'Hämta uppgifter från annons',
         importSourceNote:'Stöds för närvarande: Fastighetsbyran.com',
         medianpsmSource: 'Regionalt snitt från SCB (fritidshus). Justera vid behov.',
@@ -705,6 +749,8 @@
         headerSub:      'Fritidshus fair-value estimator',
         headerNote:     'Built for Swedish vacation properties only — not applicable to villas or bostadsrätter.',
         langLabel:      'SV',
+        propertyHeaderLabel: 'Valuation for',
+        historyTitle:        'Previous valuations',
         importCardTitle:'Import from listing',
         importSourceNote:'Currently supported: Fastighetsbyran.com',
         medianpsmSource: 'Regional average from SCB (fritidshus). Adjust if needed.',
@@ -826,6 +872,8 @@
       document.getElementById('header-note').textContent         = t('headerNote');
       document.getElementById('lang-btn').textContent            = t('langLabel');
 
+      document.getElementById('property-header-label').textContent = t('propertyHeaderLabel');
+      renderHistory();
       document.getElementById('import-card-title').textContent   = t('importCardTitle');
       document.getElementById('import-source-note').textContent  = t('importSourceNote');
       var mpNote = document.getElementById('medianpsm-source');
@@ -987,6 +1035,57 @@
       children.forEach(function(c) { if (c) parent.appendChild(c); });
     }
 
+    /* ── Valuation history (localStorage) ── */
+    var HISTORY_KEY = 'bovardare_history';
+    var HISTORY_MAX = 10;
+
+    function loadHistory() {
+      try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+      catch(e) { return []; }
+    }
+
+    function saveToHistory(url, area, address) {
+      var list = loadHistory().filter(function(h) { return h.url !== url; });
+      list.unshift({ url: url, area: area || '', address: address || '', ts: Date.now() });
+      if (list.length > HISTORY_MAX) list = list.slice(0, HISTORY_MAX);
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch(e) {}
+      renderHistory();
+    }
+
+    function deleteFromHistory(url) {
+      var list = loadHistory().filter(function(h) { return h.url !== url; });
+      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch(e) {}
+      renderHistory();
+    }
+
+    function renderHistory() {
+      var list = loadHistory();
+      var container = document.getElementById('history-list');
+      while (container.firstChild) container.removeChild(container.firstChild);
+      if (!list.length) return;
+
+      var title = el('p', { className: 'history-title' }, [t('historyTitle')]);
+      container.appendChild(title);
+
+      list.forEach(function(h) {
+        var label = el('div', {}, [
+          el('div', { className: 'history-item-label' }, [h.area || h.address]),
+          el('div', { className: 'history-item-sub'   }, [h.area ? h.address : '']),
+        ]);
+        var del = el('button', { className: 'history-item-del', title: 'Ta bort' }, ['×']);
+        del.addEventListener('click', function(e) {
+          e.stopPropagation();
+          deleteFromHistory(h.url);
+        });
+        var row = el('div', { className: 'history-item' }, [label, del]);
+        row.addEventListener('click', function() {
+          document.getElementById('listing-url').value = h.url;
+          fetchListing();
+        });
+        container.appendChild(row);
+      });
+    }
+
     /* ── Listing importer ── */
     var NUMERIC_FIELDS  = ['asking', 'sqm', 'plot', 'buildyear', 'taxval', 'opex', 'medianpsm'];
     var DROPDOWN_FIELDS = ['adj_energy', 'adj_heating', 'adj_hoa'];
@@ -1042,7 +1141,7 @@
         if (!res.ok) {
           var err = await res.json().catch(function() { return {}; });
           setImportStatus('import-error', t('importError') + (err.detail ? ' (' + err.detail + ')' : ''));
-          document.getElementById('header-sub').textContent = t('headerSub');
+          document.getElementById('property-header').style.display = 'none';
           return;
         }
         var data = await res.json();
@@ -1069,9 +1168,12 @@
           }
         });
 
-        // Update header to show property address
-        if (data.title) {
-          document.getElementById('header-sub').textContent = data.title;
+        // Update header and save to history
+        if (data.area || data.address) {
+          document.getElementById('property-area').textContent    = data.area    || '';
+          document.getElementById('property-address').textContent = data.address || '';
+          document.getElementById('property-header').style.display = 'block';
+          saveToHistory(url, data.area, data.address);
         }
 
         recalc();
@@ -1286,6 +1388,7 @@
     }
 
     recalc();
+    renderHistory();
   </script>
 </body>
 </html>
