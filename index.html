@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bovärdare — Swedish property fair-value estimator</title>
+  <title>Bovärdare — Värderingsverktyg för fritidshus</title>
   <style>
     :root {
       --bg-page: #f5f5f2;
@@ -48,6 +48,9 @@
     }
 
     .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
       margin-bottom: 2rem;
       padding-bottom: 1.5rem;
       border-bottom: 0.5px solid var(--border-default);
@@ -60,37 +63,37 @@
       line-height: 1.2;
     }
 
-    .header p {
+    .header-sub {
       font-size: 14px;
       color: var(--text-secondary);
       margin-top: 0.2rem;
     }
 
-    .type-toggle {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1.25rem;
+    .header-note {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 0.1rem;
     }
 
-    .type-btn {
-      flex: 1;
-      padding: 0.45rem 1rem;
+    .lang-btn {
+      flex-shrink: 0;
+      margin-top: 0.2rem;
+      padding: 0.3rem 0.75rem;
       font-family: inherit;
-      font-size: 14px;
-      font-weight: 400;
-      color: var(--text-tertiary);
-      background: var(--bg-card);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: transparent;
       border: 0.5px solid var(--border-default);
       border-radius: 20px;
       cursor: pointer;
+      letter-spacing: 0.04em;
       transition: color 0.12s, border-color 0.12s;
-      text-align: center;
     }
 
-    .type-btn.active {
+    .lang-btn:hover {
       color: var(--text-primary);
       border-color: var(--border-emphasis);
-      font-weight: 500;
     }
 
     .card {
@@ -159,6 +162,14 @@
       background-position: right 0.8rem center;
       padding-right: 2.25rem;
       cursor: pointer;
+    }
+
+    .peak-warning {
+      display: none;
+      font-size: 12px;
+      color: #BA7517;
+      margin-top: 0.35rem;
+      line-height: 1.4;
     }
 
     .metric-tile {
@@ -305,7 +316,6 @@
       .grid-3 { grid-template-columns: 1fr 1fr; }
       .factor-grid { grid-template-columns: 1fr; }
       .verdict-amount { font-size: 26px; }
-      .type-btn { font-size: 13px; padding: 0.4rem 0.5rem; }
     }
   </style>
 </head>
@@ -313,127 +323,129 @@
   <div class="container">
 
     <header class="header">
-      <h1>Bovärdare</h1>
-      <p>Swedish property fair-value estimator</p>
+      <div>
+        <h1>Bovärdare</h1>
+        <p class="header-sub" id="header-sub">Värderingsverktyg för fritidshus</p>
+        <p class="header-note" id="header-note">Anpassat för svenska fritidshus — gäller ej villor eller bostadsrätter.</p>
+      </div>
+      <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
     </header>
 
-    <div class="type-toggle">
-      <button class="type-btn active" data-type="fritidshus" onclick="setPropType('fritidshus')">Fritidshus</button>
-      <button class="type-btn" data-type="villa" onclick="setPropType('villa')">Villa</button>
-      <button class="type-btn" data-type="bostadsratt" onclick="setPropType('bostadsratt')">Bostadsrätt</button>
-    </div>
-
+    <!-- Core inputs -->
     <div class="card">
-      <div class="card-title">Core details</div>
+      <div class="card-title" id="card-core-title">Grunduppgifter</div>
       <div class="grid-2">
         <label>
-          <span class="label-text">Asking price (kr)</span>
+          <span class="label-text" id="label-asking">Utgångspris (kr)</span>
           <input type="number" id="asking" value="3295000" oninput="recalc()">
         </label>
         <label>
-          <span class="label-text">Living area (m²)</span>
+          <span class="label-text" id="label-sqm">Boyta (m²)</span>
           <input type="number" id="sqm" value="105" oninput="recalc()">
         </label>
         <label>
-          <span class="label-text">Tax assessment value — taxeringsvärde (kr)</span>
+          <span class="label-text" id="label-taxval">Taxeringsvärde (kr)</span>
           <input type="number" id="taxval" value="2845000" oninput="recalc()">
+          <span class="peak-warning" id="taxval-warning">Taxeringsvärdet speglar troligen 2022 års toppnivåer — dämpning tillämpas automatiskt.</span>
         </label>
         <label>
-          <span class="label-text">Year built</span>
+          <span class="label-text" id="label-buildyear">Byggnadsår</span>
           <input type="number" id="buildyear" value="2022" oninput="recalc()">
         </label>
         <label>
-          <span class="label-text">Annual running cost (kr/year)</span>
+          <span class="label-text" id="label-opex">Årliga driftkostnader (kr/år)</span>
           <input type="number" id="opex" value="17683" oninput="recalc()">
         </label>
         <label>
-          <span class="label-text">Plot size (m²)</span>
+          <span class="label-text" id="label-plot">Tomtareal (m²)</span>
           <input type="number" id="plot" value="2153" oninput="recalc()">
         </label>
       </div>
     </div>
 
+    <!-- Market comparables -->
     <div class="card">
-      <div class="card-title">Market comparables</div>
+      <div class="card-title" id="card-market-title">Marknadsdata</div>
       <div class="grid-2">
         <label>
-          <span class="label-text">Area median price (kr/m²)</span>
-          <input type="number" id="medianpsm" value="26000" oninput="recalc()">
+          <span class="label-text" id="label-medianpsm">Mediankris i området (kr/m²)</span>
+          <input type="number" id="medianpsm" value="24000" oninput="recalc()">
         </label>
         <label>
-          <span class="label-text">New-build premium (kr/m²)</span>
+          <span class="label-text" id="label-newbuild">Nybyggnadspremie (kr/m²)</span>
           <input type="number" id="newbuild" value="4000" oninput="recalc()">
         </label>
         <label>
-          <span class="label-text">Peak market price (kr/m²)</span>
+          <span class="label-text" id="label-peakpsm">Toppmarknadspris (kr/m²)</span>
           <input type="number" id="peakpsm" value="35000" oninput="recalc()">
         </label>
         <label>
-          <span class="label-text">Market cycle index</span>
+          <span class="label-text" id="label-cycleidx">Marknadskonjunktur</span>
           <select id="cycleidx" onchange="recalc()">
-            <option value="0.88">-12% — Post-peak, weak</option>
-            <option value="0.92" selected>-8% — Soft recovery</option>
-            <option value="0.96">-4% — Recovering</option>
-            <option value="1.00">0% — At peak</option>
-            <option value="1.05">+5% — Above peak</option>
+            <option value="0.88" selected>-12% — Eftertoppsnivå, svag</option>
+            <option value="0.92">-8% — Svag återhämtning</option>
+            <option value="0.96">-4% — Återhämtning</option>
+            <option value="1.00">0% — Vid toppen</option>
+            <option value="1.05">+5% — Över toppen</option>
           </select>
         </label>
       </div>
-      <p class="helper-note">Area median = recent comparable sales in the same municipality. Set new-build premium to 0 for older properties.</p>
+      <p class="helper-note" id="helper-market">Mediankris = senaste jämförbara försäljningar i samma kommun. Sätt nybyggnadspremie till 0 för äldre fastigheter.</p>
     </div>
 
+    <!-- Qualitative adjustments -->
     <div class="card">
-      <div class="card-title">Qualitative adjustments</div>
+      <div class="card-title" id="card-qual-title">Kvalitativa justeringar</div>
       <div class="grid-2">
         <label>
-          <span class="label-text">Water / beach access</span>
+          <span class="label-text" id="label-water">Strandnärhet</span>
           <select id="adj_water" onchange="recalc()">
-            <option value="0">None</option>
-            <option value="0.05" selected>Shared / walking distance</option>
-            <option value="0.12">Direct frontage</option>
+            <option value="0">Ingen</option>
+            <option value="0.05" selected>Delad / gångavstånd</option>
+            <option value="0.12">Direkt strandtomt</option>
           </select>
         </label>
         <label>
-          <span class="label-text">Infrastructure (VA + fiber)</span>
+          <span class="label-text" id="label-infra">Infrastruktur (VA + fiber)</span>
           <select id="adj_infra" onchange="recalc()">
-            <option value="-0.03">Neither</option>
-            <option value="0">Partial</option>
-            <option value="0.03" selected>Full</option>
+            <option value="-0.03">Varken</option>
+            <option value="0">Delvis</option>
+            <option value="0.03" selected>Komplett</option>
           </select>
         </label>
         <label>
-          <span class="label-text">Condition</span>
+          <span class="label-text" id="label-cond">Skick</span>
           <select id="adj_cond" onchange="recalc()">
-            <option value="-0.10">Needs full renovation</option>
-            <option value="-0.04">Some work needed</option>
-            <option value="0.02" selected>New / move-in ready</option>
+            <option value="-0.10">Behöver totalrenovering</option>
+            <option value="-0.04">Visst renoveringsbehov</option>
+            <option value="0.02" selected>Nyskick / inflyttningsklart</option>
           </select>
         </label>
         <label>
-          <span class="label-text">Distance to major city</span>
+          <span class="label-text" id="label-dist">Avstånd till storstad</span>
           <select id="adj_dist" onchange="recalc()">
-            <option value="0.04">Less than 1 hour</option>
-            <option value="0.01" selected>1–2 hours</option>
-            <option value="-0.03">2–3 hours</option>
-            <option value="-0.07">More than 3 hours</option>
+            <option value="0.04">Mindre än 1 timme</option>
+            <option value="0.01" selected>1–2 timmar</option>
+            <option value="-0.03">2–3 timmar</option>
+            <option value="-0.07">Mer än 3 timmar</option>
           </select>
         </label>
         <label>
-          <span class="label-text">HOA / samfällighet fee</span>
+          <span class="label-text" id="label-hoa">Samfällighetsavgift</span>
           <select id="adj_hoa" onchange="recalc()">
-            <option value="0.02">Less than 5,000 kr/year</option>
-            <option value="0">5,000–10,000 kr/year</option>
-            <option value="-0.02" selected>10,000–15,000 kr/year</option>
-            <option value="-0.04">More than 15,000 kr/year</option>
+            <option value="0.02">Under 5\u202f000 kr/år</option>
+            <option value="0">5\u202f000–10\u202f000 kr/år</option>
+            <option value="-0.02" selected>10\u202f000–15\u202f000 kr/år</option>
+            <option value="-0.04">Mer än 15\u202f000 kr/år</option>
           </select>
         </label>
         <label>
-          <span class="label-text">Local market momentum</span>
+          <span class="label-text" id="label-mom">Lokal marknadsutveckling</span>
           <select id="adj_mom" onchange="recalc()">
-            <option value="0.03">Rising more than +5% YoY</option>
-            <option value="0.01">Flat ±5%</option>
-            <option value="-0.02" selected>Soft / post-peak</option>
-            <option value="-0.05">Falling</option>
+            <option value="0.03">Stigande mer än +5% per år</option>
+            <option value="0.01">Oförändrad ±5%</option>
+            <option value="-0.02" selected>Svag / eftertoppsnivå</option>
+            <option value="-0.05">Sjunkande</option>
           </select>
         </label>
       </div>
@@ -441,36 +453,36 @@
 
     <!-- Verdict card -->
     <div id="verdict-card" class="verdict-card">
-      <div class="verdict-overline" id="verdict-overline">Estimated fair value</div>
+      <div class="verdict-overline" id="verdict-overline">Uppskattat marknadsvärde</div>
       <div class="verdict-amount" id="verdict-amount">—</div>
-      <div class="verdict-desc" id="verdict-desc">Enter values above to calculate.</div>
+      <div class="verdict-desc" id="verdict-desc">Fyll i uppgifterna ovan för att beräkna.</div>
     </div>
 
     <!-- Metric tiles -->
     <div class="grid-3">
       <div class="metric-tile">
-        <div class="metric-tile-label">Asking price/m²</div>
+        <div class="metric-tile-label" id="mt-label-asking-psm">Utgångspris/m²</div>
         <div class="metric-tile-value" id="m-asking-psm">—</div>
       </div>
       <div class="metric-tile">
-        <div class="metric-tile-label">Fair value/m²</div>
+        <div class="metric-tile-label" id="mt-label-fair-psm">Marknadsvärde/m²</div>
         <div class="metric-tile-value" id="m-fair-psm">—</div>
       </div>
       <div class="metric-tile">
-        <div class="metric-tile-label">Tax value ratio</div>
+        <div class="metric-tile-label" id="mt-label-tax-ratio">Taxeringskvot</div>
         <div class="metric-tile-value" id="m-tax-ratio">—</div>
       </div>
     </div>
 
     <!-- Signal breakdown -->
     <div class="card">
-      <div class="card-title">Signal breakdown</div>
+      <div class="card-title" id="card-signals-title">Signalanalys</div>
       <div class="signal-list" id="signal-list"></div>
     </div>
 
     <!-- Adjustment factors -->
     <div class="card">
-      <div class="card-title">Adjustment factors</div>
+      <div class="card-title" id="card-factors-title">Justeringsfaktorer</div>
       <div class="factor-grid" id="factor-grid"></div>
     </div>
 
@@ -479,16 +491,274 @@
   </div>
 
   <script>
-    var propType = 'fritidshus';
+    var LANG = 'sv';
 
-    function setPropType(t) {
-      propType = t;
-      document.querySelectorAll('.type-btn').forEach(function(b) {
-        b.classList.toggle('active', b.dataset.type === t);
-      });
+    /* ── Translations ── */
+    var T = {
+      sv: {
+        headerSub:      'Värderingsverktyg för fritidshus',
+        headerNote:     'Anpassat för svenska fritidshus — gäller ej villor eller bostadsrätter.',
+        langLabel:      'EN',
+        cardCore:       'Grunduppgifter',
+        labelAsking:    'Utgångspris (kr)',
+        labelSqm:       'Boyta (m²)',
+        labelTaxval:    'Taxeringsvärde (kr)',
+        labelBuildyear: 'Byggnadsår',
+        labelOpex:      'Årliga driftkostnader (kr/år)',
+        labelPlot:      'Tomtareal (m²)',
+        peakWarning:    'Taxeringsvärdet speglar troligen 2022 års toppnivåer — dämpning tillämpas automatiskt.',
+        cardMarket:     'Marknadsdata',
+        labelMedianpsm: 'Mediankris i området (kr/m²)',
+        labelNewbuild:  'Nybyggnadspremie (kr/m²)',
+        labelPeakpsm:   'Toppmarknadspris (kr/m²)',
+        labelCycleidx:  'Marknadskonjunktur',
+        cyc088: '-12% — Eftertoppsnivå, svag',
+        cyc092: '-8% — Svag återhämtning',
+        cyc096: '-4% — Återhämtning',
+        cyc100: '0% — Vid toppen',
+        cyc105: '+5% — Över toppen',
+        helperMarket:   'Mediankris = senaste jämförbara försäljningar i samma kommun. Sätt nybyggnadspremie till 0 för äldre fastigheter.',
+        cardQual:       'Kvalitativa justeringar',
+        labelWater:     'Strandnärhet',
+        w0:   'Ingen',
+        w05:  'Delad / gångavstånd',
+        w12:  'Direkt strandtomt',
+        labelInfra:     'Infrastruktur (VA + fiber)',
+        i_n:  'Varken',
+        i_p:  'Delvis',
+        i_f:  'Komplett',
+        labelCond:      'Skick',
+        c_r:  'Behöver totalrenovering',
+        c_s:  'Visst renoveringsbehov',
+        c_n:  'Nyskick / inflyttningsklart',
+        labelDist:      'Avstånd till storstad',
+        d1:   'Mindre än 1 timme',
+        d12:  '1–2 timmar',
+        d23:  '2–3 timmar',
+        d3:   'Mer än 3 timmar',
+        labelHoa:       'Samfällighetsavgift',
+        h5:   'Under 5\u202f000 kr/år',
+        h510: '5\u202f000–10\u202f000 kr/år',
+        h1015:'10\u202f000–15\u202f000 kr/år',
+        h15:  'Mer än 15\u202f000 kr/år',
+        labelMom:       'Lokal marknadsutveckling',
+        m5up: 'Stigande mer än +5% per år',
+        mflat:'Oförändrad ±5%',
+        msoft:'Svag / eftertoppsnivå',
+        mfall:'Sjunkande',
+        verdictOverline:'Uppskattat marknadsvärde',
+        labelAskingPsm: 'Utgångspris/m²',
+        labelFairPsm:   'Marknadsvärde/m²',
+        labelTaxRatio:  'Taxeringskvot',
+        cardSignals:    'Signalanalys',
+        cardFactors:    'Justeringsfaktorer',
+        sigAsking:      'Utgångspris (referens)',
+        sigComp:        'Jämförbara/m²',
+        sigTax:         'Taxeringsvärde',
+        sigPeak:        'Toppkonjunkturjusterat',
+        dampSuffix:     ' (dämpat)',
+        fWater: 'Strandnärhet',
+        fInfra: 'Infrastruktur',
+        fCond:  'Skick',
+        fDist:  'Stadsavstånd',
+        fOpex:  'Driftkostnader',
+        fMom:   'Marknadsutveckling',
+        fAge:   'Åldersbonus/-avdrag',
+        fPlot:  'Tomtpremie',
+        fYield: 'Driftkostnadsjustering',
+        fCycle: 'Konjunkturläge',
+        vOver:  'Övervärderat',
+        vHigh:  'Något högt',
+        vFair:  'Rättvist prissatt',
+        vPot:   'Potentiellt undervärderat',
+        vUnder: 'Undervärderat',
+        vDesc: function(vl, pct, diff) {
+          return vl + ' \u2014 utgångspriset är ' + pct +
+            ' (' + diff + ') jämfört med uppskattat marknadsvärde';
+        },
+        summary: function(fv, costPct, room, roomPct) {
+          return 'Marknadsvärde: ' + fv +
+            '  \u00b7  Driftkostnadsbörda: ' + costPct + '% av utgångspriset' +
+            '  \u00b7  Förhandlingsutrymme: ' + room + ' (' + roomPct + ')' +
+            '  \u00b7  Modellbaserad uppskattning — inte en professionell värdering.';
+        }
+      },
+      en: {
+        headerSub:      'Fritidshus fair-value estimator',
+        headerNote:     'Built for Swedish vacation properties only — not applicable to villas or bostadsrätter.',
+        langLabel:      'SV',
+        cardCore:       'Core details',
+        labelAsking:    'Asking price (kr)',
+        labelSqm:       'Living area (m²)',
+        labelTaxval:    'Tax assessment value — taxeringsvärde (kr)',
+        labelBuildyear: 'Year built',
+        labelOpex:      'Annual running cost (kr/year)',
+        labelPlot:      'Plot size (m²)',
+        peakWarning:    'Assessment likely reflects 2022 peak prices — dampening applied automatically.',
+        cardMarket:     'Market comparables',
+        labelMedianpsm: 'Area median price (kr/m²)',
+        labelNewbuild:  'New-build premium (kr/m²)',
+        labelPeakpsm:   'Peak market price (kr/m²)',
+        labelCycleidx:  'Market cycle index',
+        cyc088: '-12% — Post-peak, weak',
+        cyc092: '-8% — Soft recovery',
+        cyc096: '-4% — Recovering',
+        cyc100: '0% — At peak',
+        cyc105: '+5% — Above peak',
+        helperMarket:   'Area median = recent comparable sales in the same municipality. Set new-build premium to 0 for older properties.',
+        cardQual:       'Qualitative adjustments',
+        labelWater:     'Water / beach access',
+        w0:   'None',
+        w05:  'Shared / walking distance',
+        w12:  'Direct frontage',
+        labelInfra:     'Infrastructure (VA + fiber)',
+        i_n:  'Neither',
+        i_p:  'Partial',
+        i_f:  'Full',
+        labelCond:      'Condition',
+        c_r:  'Needs full renovation',
+        c_s:  'Some work needed',
+        c_n:  'New / move-in ready',
+        labelDist:      'Distance to major city',
+        d1:   'Less than 1 hour',
+        d12:  '1–2 hours',
+        d23:  '2–3 hours',
+        d3:   'More than 3 hours',
+        labelHoa:       'HOA / samfällighet fee',
+        h5:   'Less than 5,000 kr/year',
+        h510: '5,000–10,000 kr/year',
+        h1015:'10,000–15,000 kr/year',
+        h15:  'More than 15,000 kr/year',
+        labelMom:       'Local market momentum',
+        m5up: 'Rising more than +5% YoY',
+        mflat:'Flat ±5%',
+        msoft:'Soft / post-peak',
+        mfall:'Falling',
+        verdictOverline:'Estimated fair value',
+        labelAskingPsm: 'Asking price/m²',
+        labelFairPsm:   'Fair value/m²',
+        labelTaxRatio:  'Tax value ratio',
+        cardSignals:    'Signal breakdown',
+        cardFactors:    'Adjustment factors',
+        sigAsking:      'Asking price (baseline)',
+        sigComp:        'Comparable/m²',
+        sigTax:         'Tax assessment',
+        sigPeak:        'Peak-cycle adjusted',
+        dampSuffix:     ' (dampened)',
+        fWater: 'Water access',
+        fInfra: 'Infrastructure',
+        fCond:  'Condition',
+        fDist:  'City distance',
+        fOpex:  'Running costs',
+        fMom:   'Market momentum',
+        fAge:   'Age bonus/penalty',
+        fPlot:  'Plot premium',
+        fYield: 'Yield check',
+        fCycle: 'Cycle position',
+        vOver:  'Overvalued',
+        vHigh:  'Slightly high',
+        vFair:  'Fairly priced',
+        vPot:   'Potential value',
+        vUnder: 'Undervalued',
+        vDesc: function(vl, pct, diff) {
+          return vl + ' \u2014 asking is ' + pct + ' (' + diff + ') vs estimated fair value';
+        },
+        summary: function(fv, costPct, room, roomPct) {
+          return 'Fair value: ' + fv +
+            '  \u00b7  Running cost burden: ' + costPct + '% of asking price' +
+            '  \u00b7  Implied negotiation room: ' + room + ' (' + roomPct + ')' +
+            '  \u00b7  Model-based estimate only \u2014 not a professional appraisal.';
+        }
+      }
+    };
+
+    function t(key) { return T[LANG][key]; }
+
+    function toggleLang() { setLang(LANG === 'sv' ? 'en' : 'sv'); }
+
+    function setLang(lang) {
+      LANG = lang;
+      document.documentElement.lang = lang;
+
+      document.getElementById('header-sub').textContent          = t('headerSub');
+      document.getElementById('header-note').textContent         = t('headerNote');
+      document.getElementById('lang-btn').textContent            = t('langLabel');
+
+      document.getElementById('card-core-title').textContent     = t('cardCore');
+      document.getElementById('label-asking').textContent        = t('labelAsking');
+      document.getElementById('label-sqm').textContent           = t('labelSqm');
+      document.getElementById('label-taxval').textContent        = t('labelTaxval');
+      document.getElementById('label-buildyear').textContent     = t('labelBuildyear');
+      document.getElementById('label-opex').textContent          = t('labelOpex');
+      document.getElementById('label-plot').textContent          = t('labelPlot');
+      document.getElementById('taxval-warning').textContent      = t('peakWarning');
+
+      document.getElementById('card-market-title').textContent   = t('cardMarket');
+      document.getElementById('label-medianpsm').textContent     = t('labelMedianpsm');
+      document.getElementById('label-newbuild').textContent      = t('labelNewbuild');
+      document.getElementById('label-peakpsm').textContent       = t('labelPeakpsm');
+      document.getElementById('label-cycleidx').textContent      = t('labelCycleidx');
+      document.getElementById('helper-market').textContent       = t('helperMarket');
+
+      var cyc = document.getElementById('cycleidx');
+      cyc.options[0].textContent = t('cyc088');
+      cyc.options[1].textContent = t('cyc092');
+      cyc.options[2].textContent = t('cyc096');
+      cyc.options[3].textContent = t('cyc100');
+      cyc.options[4].textContent = t('cyc105');
+
+      document.getElementById('card-qual-title').textContent     = t('cardQual');
+      document.getElementById('label-water').textContent         = t('labelWater');
+      document.getElementById('label-infra').textContent         = t('labelInfra');
+      document.getElementById('label-cond').textContent          = t('labelCond');
+      document.getElementById('label-dist').textContent          = t('labelDist');
+      document.getElementById('label-hoa').textContent           = t('labelHoa');
+      document.getElementById('label-mom').textContent           = t('labelMom');
+
+      var w = document.getElementById('adj_water');
+      w.options[0].textContent = t('w0');
+      w.options[1].textContent = t('w05');
+      w.options[2].textContent = t('w12');
+
+      var inf = document.getElementById('adj_infra');
+      inf.options[0].textContent = t('i_n');
+      inf.options[1].textContent = t('i_p');
+      inf.options[2].textContent = t('i_f');
+
+      var c = document.getElementById('adj_cond');
+      c.options[0].textContent = t('c_r');
+      c.options[1].textContent = t('c_s');
+      c.options[2].textContent = t('c_n');
+
+      var d = document.getElementById('adj_dist');
+      d.options[0].textContent = t('d1');
+      d.options[1].textContent = t('d12');
+      d.options[2].textContent = t('d23');
+      d.options[3].textContent = t('d3');
+
+      var h = document.getElementById('adj_hoa');
+      h.options[0].textContent = t('h5');
+      h.options[1].textContent = t('h510');
+      h.options[2].textContent = t('h1015');
+      h.options[3].textContent = t('h15');
+
+      var m = document.getElementById('adj_mom');
+      m.options[0].textContent = t('m5up');
+      m.options[1].textContent = t('mflat');
+      m.options[2].textContent = t('msoft');
+      m.options[3].textContent = t('mfall');
+
+      document.getElementById('verdict-overline').textContent    = t('verdictOverline');
+      document.getElementById('mt-label-asking-psm').textContent = t('labelAskingPsm');
+      document.getElementById('mt-label-fair-psm').textContent   = t('labelFairPsm');
+      document.getElementById('mt-label-tax-ratio').textContent  = t('labelTaxRatio');
+      document.getElementById('card-signals-title').textContent  = t('cardSignals');
+      document.getElementById('card-factors-title').textContent  = t('cardFactors');
+
       recalc();
     }
 
+    /* ── Formatters ── */
     function fmtKr(n) {
       return Math.round(n).toLocaleString('sv-SE') + '\u00a0kr';
     }
@@ -498,7 +768,7 @@
     }
 
     function fmtPct(n, d) {
-      d = d === undefined ? 1 : d;
+      d = (d === undefined) ? 1 : d;
       return (n >= 0 ? '+' : '') + n.toFixed(d) + '%';
     }
 
@@ -506,13 +776,8 @@
       return n.toFixed(2) + '\u00d7';
     }
 
-    function num(id) {
-      return parseFloat(document.getElementById(id).value) || 0;
-    }
-
-    function sel(id) {
-      return parseFloat(document.getElementById(id).value);
-    }
+    function num(id) { return parseFloat(document.getElementById(id).value) || 0; }
+    function sel(id) { return parseFloat(document.getElementById(id).value); }
 
     function ageAdj(yr) {
       var age = 2026 - yr;
@@ -523,7 +788,7 @@
       return -0.07;
     }
 
-    /* Build a DOM element with properties and children */
+    /* ── DOM helpers ── */
     function el(tag, props, children) {
       var e = document.createElement(tag);
       if (props) {
@@ -552,11 +817,10 @@
 
     function setChildren(parent, children) {
       while (parent.firstChild) parent.removeChild(parent.firstChild);
-      children.forEach(function(c) {
-        if (c) parent.appendChild(c);
-      });
+      children.forEach(function(c) { if (c) parent.appendChild(c); });
     }
 
+    /* ── Main calculation ── */
     function recalc() {
       var asking    = num('asking');
       var sqm       = num('sqm');
@@ -578,9 +842,13 @@
 
       if (!asking || !sqm) return;
 
+      /* Peak-year warning */
+      document.getElementById('taxval-warning').style.display =
+        (buildyear >= 2021 && buildyear <= 2023) ? 'block' : 'none';
+
       /* Derived adjustments */
-      var age      = ageAdj(buildyear);
-      var plotBon  = Math.min(plot / 10000, 0.08);
+      var age     = ageAdj(buildyear);
+      var plotBon = Math.min(plot / 10000, 0.08);
 
       var costRatio = opex / asking;
       var yieldAdj;
@@ -594,26 +862,23 @@
                       + adj_hoa + adj_mom + age + plotBon;
       var compValue = baseCompPsm * qualAdj * sqm;
 
-      /* Signal 2 — Tax assessment */
-      var taxMultiplier = (propType === 'bostadsratt') ? 0 : (1 / 0.75);
-      var taxValue = taxval * taxMultiplier;
+      /* Signal 2 — Tax assessment with peak-year dampening */
+      var taxAssessmentYear = (buildyear <= 2022) ? 2022 : buildyear;
+      var cycleDelta = 1 - cycleidx;
+      var peakDampening;
+      if (taxAssessmentYear >= 2021 && taxAssessmentYear <= 2023 && cycleidx < 1.0) {
+        peakDampening = 1 - (cycleDelta * 1.5);
+      } else {
+        peakDampening = 1.0;
+      }
+      var taxValue = taxval * (1 / 0.75) * peakDampening;
+      var taxIsDampened = (peakDampening < 1.0);
 
       /* Signal 3 — Peak-cycle adjusted */
       var peakValue = peakpsm * cycleidx * sqm;
 
-      /* Weights */
-      var w1, w2, w3;
-      if (propType === 'fritidshus') { w1 = 0.40; w2 = 0.35; w3 = 0.25; }
-      else if (propType === 'villa') { w1 = 0.40; w2 = 0.40; w3 = 0.20; }
-      else                           { w1 = 0.60; w2 = 0.00; w3 = 0.40; }
-
-      /* Blended fair value */
-      var fairVal;
-      if (propType === 'bostadsratt') {
-        fairVal = compValue * 0.60 + peakValue * 0.40;
-      } else {
-        fairVal = compValue * w1 + taxValue * w2 + peakValue * w3;
-      }
+      /* Fixed fritidshus weights */
+      var fairVal = (compValue * 0.40) + (taxValue * 0.35) + (peakValue * 0.25);
       fairVal *= (1 + yieldAdj);
 
       /* Verdict */
@@ -622,15 +887,15 @@
 
       var vLabel, vColor, vBg;
       if (gap > 0.15) {
-        vLabel = 'Overvalued';      vColor = '#A32D2D'; vBg = '#A32D2D12';
+        vLabel = t('vOver');  vColor = '#A32D2D'; vBg = '#A32D2D12';
       } else if (gap > 0.05) {
-        vLabel = 'Slightly high';   vColor = '#BA7517'; vBg = '#BA751712';
+        vLabel = t('vHigh');  vColor = '#BA7517'; vBg = '#BA751712';
       } else if (gap > -0.05) {
-        vLabel = 'Fairly priced';   vColor = '#3B6D11'; vBg = '#3B6D1112';
+        vLabel = t('vFair');  vColor = '#3B6D11'; vBg = '#3B6D1112';
       } else if (gap > -0.15) {
-        vLabel = 'Potential value'; vColor = '#185FA5'; vBg = '#185FA512';
+        vLabel = t('vPot');   vColor = '#185FA5'; vBg = '#185FA512';
       } else {
-        vLabel = 'Undervalued';     vColor = '#185FA5'; vBg = '#185FA512';
+        vLabel = t('vUnder'); vColor = '#185FA5'; vBg = '#185FA512';
       }
 
       var diffKr   = asking - fairVal;
@@ -641,11 +906,9 @@
       vc.style.background  = vBg;
       vc.style.borderColor = vColor + '38';
       vc.style.color       = vColor;
-      document.getElementById('verdict-amount').textContent =
-        fmtKr(fairVal);
+      document.getElementById('verdict-amount').textContent = fmtKr(fairVal);
       document.getElementById('verdict-desc').textContent =
-        vLabel + ' \u2014 asking is ' + fmtPct(gapPct) +
-        ' (' + diffSign + fmtKr(diffKr) + ') vs estimated fair value';
+        t('vDesc')(vLabel, fmtPct(gapPct), diffSign + fmtKr(diffKr));
 
       /* ── Metric tiles ── */
       document.getElementById('m-asking-psm').textContent =
@@ -656,34 +919,15 @@
         taxval > 0 ? fmtRatio(asking / taxval) : '\u2014';
 
       /* ── Signal bars ── */
+      var taxLabel = t('sigTax') + ' \u2014 35%' +
+        (taxIsDampened ? t('dampSuffix') : '');
+
       var signals = [
-        {
-          name: 'Asking price (baseline)',
-          value: asking,
-          color: '#888780',
-          weight: null
-        },
-        {
-          name: 'Comparable/m\u00b2 \u2014 ' + Math.round(w1 * 100) + '%',
-          value: compValue,
-          color: '#185FA5',
-          weight: w1
-        }
+        { name: t('sigAsking'),          value: asking,    color: '#888780', weight: null },
+        { name: t('sigComp') + ' \u2014 40%',  value: compValue, color: '#185FA5', weight: 0.40 },
+        { name: taxLabel,                value: taxValue,  color: '#3B6D11', weight: 0.35 },
+        { name: t('sigPeak') + ' \u2014 25%',  value: peakValue, color: '#BA7517', weight: 0.25 }
       ];
-      if (propType !== 'bostadsratt') {
-        signals.push({
-          name: 'Tax assessment \u2014 ' + Math.round(w2 * 100) + '%',
-          value: taxValue,
-          color: '#3B6D11',
-          weight: w2
-        });
-      }
-      signals.push({
-        name: 'Peak-cycle adjusted \u2014 ' + Math.round(w3 * 100) + '%',
-        value: peakValue,
-        color: '#BA7517',
-        weight: w3
-      });
 
       var maxSig = Math.max.apply(null, signals.map(function(s) { return s.value; }));
 
@@ -711,17 +955,17 @@
 
       /* ── Factor grid ── */
       var factors = [
-        { name: 'Water access',      val: adj_water, isInfo: false },
-        { name: 'Infrastructure',    val: adj_infra,  isInfo: false },
-        { name: 'Condition',         val: adj_cond,   isInfo: false },
-        { name: 'City distance',     val: adj_dist,   isInfo: false },
-        { name: 'Running costs',     val: null,       isInfo: true,
+        { name: t('fWater'), val: adj_water,       isInfo: false },
+        { name: t('fInfra'), val: adj_infra,        isInfo: false },
+        { name: t('fCond'),  val: adj_cond,         isInfo: false },
+        { name: t('fDist'),  val: adj_dist,         isInfo: false },
+        { name: t('fOpex'),  val: null,             isInfo: true,
           label: (costRatio * 100).toFixed(2) + '% of asking' },
-        { name: 'Market momentum',   val: adj_mom,    isInfo: false },
-        { name: 'Age bonus/penalty', val: age,        isInfo: false },
-        { name: 'Plot premium',      val: plotBon,    isInfo: false },
-        { name: 'Yield check',       val: yieldAdj,   isInfo: false },
-        { name: 'Cycle position',    val: cycleidx - 1, isInfo: false }
+        { name: t('fMom'),   val: adj_mom,          isInfo: false },
+        { name: t('fAge'),   val: age,              isInfo: false },
+        { name: t('fPlot'),  val: plotBon,          isInfo: false },
+        { name: t('fYield'), val: yieldAdj,         isInfo: false },
+        { name: t('fCycle'), val: cycleidx - 1.0,   isInfo: false }
       ];
 
       var factorTiles = factors.map(function(f) {
@@ -744,7 +988,7 @@
           label = fmtPct(0);
         }
         var nameEl = el('span', { className: 'factor-name' }, [f.name]);
-        var valEl  = el('span', { className: 'factor-val' }, [label]);
+        var valEl  = el('span', { className: 'factor-val'  }, [label]);
         valEl.style.color = color;
         var tile = el('div', { className: 'factor-tile' }, [nameEl, valEl]);
         tile.style.background = bg;
@@ -754,16 +998,17 @@
       setChildren(document.getElementById('factor-grid'), factorTiles);
 
       /* ── Summary note ── */
-      var negRoom   = -diffKr;
-      var negAbs    = Math.abs(negRoom);
-      var negSign   = negRoom >= 0 ? '' : '\u2212';
+      var negRoom  = -diffKr;
+      var negAbs   = Math.abs(negRoom);
+      var negSign  = negRoom >= 0 ? '' : '\u2212';
       var negPctAbs = Math.abs(gapPct).toFixed(1);
       document.getElementById('summary-note').textContent =
-        'Fair value: ' + fmtKr(fairVal) +
-        '  \u00b7  Running cost burden: ' + (costRatio * 100).toFixed(2) + '% of asking price' +
-        '  \u00b7  Implied negotiation room: ' + negSign + fmtKr(negAbs) +
-        ' (' + negSign + negPctAbs + '%)' +
-        '  \u00b7  Model-based estimate only \u2014 not a professional appraisal.';
+        t('summary')(
+          fmtKr(fairVal),
+          (costRatio * 100).toFixed(2),
+          negSign + fmtKr(negAbs),
+          negSign + negPctAbs + '%'
+        );
     }
 
     recalc();
