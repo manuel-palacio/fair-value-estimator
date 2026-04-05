@@ -181,12 +181,8 @@ def parse_listing(url: str) -> dict:
     tomt_raw = basfakta.get("tomtArea", "")
     plot = int(re.sub(r"\D", "", tomt_raw)) if tomt_raw else None
 
-    # Property type: try basfakta first, fall back to fakta posts
-    prop_type = (
-        basfakta.get("typBeteckning")
-        or find_in_posts(all_posts, "Typ")
-        or None
-    )
+    # Property type from basfakta
+    prop_type = basfakta.get("bostadsTyp") or None
 
     result: dict = {
         "asking":        basfakta.get("oformateratPris"),
