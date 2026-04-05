@@ -648,6 +648,7 @@
         medianpsmSource: 'Regionalt snitt från SCB (fritidshus). Justera vid behov.',
         importBtn:      'Hämta',
         importLoading:  'Hämtar annonsdata\u2026',
+        importWaking:   'Startar server, försöker igen\u2026',
         importOk:       function(n) { return 'Hittade ' + n + ' f\u00e4lt \u2014 kontrollera marknadsdata och kvalitativa justeringar manuellt.'; },
         importError:    'Kunde inte h\u00e4mta annonsdata. Kontrollera URL:en.',
         typeWarning:    function(typ) { return 'OBS: Annonsen gäller \u201c' + typ + '\u201d \u2014 inte fritidshus. Modellen är kalibrerad för semesterbostäder och jämförelsesiffrorna från SCB stämmer inte för permanent boende.'; },
@@ -764,6 +765,7 @@
         medianpsmSource: 'Regional average from SCB (fritidshus). Adjust if needed.',
         importBtn:      'Fetch',
         importLoading:  'Fetching listing data\u2026',
+        importWaking:   'Waking server, retrying\u2026',
         importOk:       function(n) { return 'Populated ' + n + ' fields \u2014 check market data and qualitative adjustments manually.'; },
         importError:    'Could not fetch listing. Check the URL.',
         typeWarning:    function(typ) { return 'Warning: listing type is \u201c' + typ + '\u201d \u2014 not a fritidshus. The model is calibrated for vacation homes; SCB comparables and market signals will not apply to permanent residences.'; },
@@ -1159,10 +1161,22 @@
       document.getElementById('type-warning').style.display = 'none';
 
       try {
-        var res = await fetch('/api/parse?url=' + encodeURIComponent(url));
-        if (!res.ok) {
-          var err = await res.json().catch(function() { return {}; });
-          setImportStatus('import-error', t('importError') + (err.detail ? ' (' + err.detail + ')' : ''));
+        var res, lastErr;
+        for (var attempt = 0; attempt < 3; attempt++) {
+          if (attempt > 0) {
+            setImportStatus('import-loading', t('importWaking'));
+            await new Promise(function(r) { setTimeout(r, 2500); });
+          }
+          try {
+            res = await fetch('/api/parse?url=' + encodeURIComponent(url));
+            if (res.ok) break;
+            lastErr = await res.json().catch(function() { return {}; });
+          } catch (fetchErr) {
+            lastErr = { detail: fetchErr.message };
+          }
+        }
+        if (!res || !res.ok) {
+          setImportStatus('import-error', t('importError') + (lastErr && lastErr.detail ? ' (' + lastErr.detail + ')' : ''));
           document.getElementById('property-header').style.display = 'none';
           return;
         }
