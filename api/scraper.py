@@ -73,15 +73,17 @@ def extract_objekt_id(url: str) -> str:
     return m.group(1)
 
 
-def fetch_preloaded_state(url: str) -> dict:
+def fetch_preloaded_state(url: str) -> tuple[dict, str]:
+    """Returns (state_dict, final_url_after_redirects)."""
     import base64
     r = httpx.get(url, headers=HEADERS, follow_redirects=True, timeout=15)
     r.raise_for_status()
+    final_url = str(r.url)
 
     # The state is base64-encoded: window.__PRELOADED_STATE__ = 'eyJ...'
     m = re.search(r"window\.__PRELOADED_STATE__\s*=\s*'([A-Za-z0-9+/=]+)'", r.text)
     if m:
-        return json.loads(base64.b64decode(m.group(1)).decode("utf-8"))
+        return json.loads(base64.b64decode(m.group(1)).decode("utf-8")), final_url
 
     # Fallback: raw JSON object (older page format)
     m = re.search(
@@ -90,7 +92,7 @@ def fetch_preloaded_state(url: str) -> dict:
         re.DOTALL,
     )
     if m:
-        return json.loads(m.group(1))
+        return json.loads(m.group(1)), final_url
 
     raise ValueError("__PRELOADED_STATE__ not found in page HTML")
 
@@ -165,7 +167,7 @@ def fetch_scb_median_psm(riks: str) -> int | None:
 
 
 def parse_listing(url: str) -> dict:
-    state = fetch_preloaded_state(url)
+    state, final_url = fetch_preloaded_state(url)
     obj_id = extract_objekt_id(url)
 
     obj_info = state.get("maeklarObjekt", {}).get("objektInfo", {})
@@ -213,7 +215,8 @@ def parse_listing(url: str) -> dict:
         result["adj_hoa"] = map_hoa(hoa_raw)
 
     # Regional median + implied peak kr/m² from SCB
-    county_slug = extract_county_slug(url)
+    # Use final URL (after redirect) so a minimal ?objektID= URL still resolves the county
+    county_slug = extract_county_slug(final_url) or extract_county_slug(url)
     riks = COUNTY_TO_RIKS.get(county_slug or "")
     if riks:
         median_psm = fetch_scb_median_psm(riks)
