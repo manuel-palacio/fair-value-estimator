@@ -343,18 +343,26 @@
 
     /* Highlight fields populated from listing */
     .field-imported { border-color: rgba(59,109,17,0.5) !important; background: rgba(59,109,17,0.05) !important; }
-    .label-imported .label-text::after {
-      content: 'Auto';
+    .label-imported .label-text::after,
+    .label-scb .label-text::after {
       display: inline-block;
       margin-left: 0.4rem;
       padding: 0.05rem 0.35rem;
-      background: rgba(59,109,17,0.12);
-      color: #3B6D11;
       border-radius: 3px;
       font-size: 10px;
       font-weight: 600;
       letter-spacing: 0.04em;
       vertical-align: middle;
+    }
+    .label-imported .label-text::after {
+      content: 'Auto';
+      background: rgba(59,109,17,0.12);
+      color: #3B6D11;
+    }
+    .label-scb .label-text::after {
+      content: 'SCB';
+      background: rgba(37,99,235,0.10);
+      color: #1D4ED8;
     }
 
     /* Recent valuations history */
@@ -1099,15 +1107,16 @@
       el.textContent = text;
     }
 
-    function markImported(id) {
+    function markImported(id, lblClass) {
+      lblClass = lblClass || 'label-imported';
       var el = document.getElementById(id);
       if (el) {
         el.classList.add('field-imported');
         var lbl = el.closest('label');
-        if (lbl) lbl.classList.add('label-imported');
+        if (lbl) lbl.classList.add(lblClass);
         el.addEventListener('input', function() {
           el.classList.remove('field-imported');
-          if (lbl) lbl.classList.remove('label-imported');
+          if (lbl) lbl.classList.remove(lblClass);
         }, { once: true });
       }
     }
@@ -1144,7 +1153,7 @@
         if (el) {
           el.classList.remove('field-imported');
           var lbl = el.closest('label');
-          if (lbl) lbl.classList.remove('label-imported');
+          if (lbl) lbl.classList.remove('label-imported', 'label-scb');
         }
       });
       document.getElementById('type-warning').style.display = 'none';
@@ -1160,10 +1169,11 @@
         var data = await res.json();
         var populated = 0;
 
+        var SCB_FIELDS = ['medianpsm', 'peakpsm'];
         NUMERIC_FIELDS.forEach(function(id) {
           if (data[id] != null) {
             document.getElementById(id).value = data[id];
-            markImported(id);
+            markImported(id, SCB_FIELDS.indexOf(id) >= 0 ? 'label-scb' : 'label-imported');
             populated++;
             if (id === 'medianpsm') {
               var note = document.getElementById('medianpsm-source');
