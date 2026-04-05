@@ -19,7 +19,7 @@ COPY api/ /api/
 # nginx config + static files
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY supervisord.conf /etc/supervisord.conf
-COPY index.html favicon.svg /usr/share/nginx/html/
+COPY index.html valuation.js favicon.svg /usr/share/nginx/html/
 
 EXPOSE 80
 CMD ["supervisord", "-c", "/etc/supervisord.conf"]
