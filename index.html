@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bovärdare — Värderingsverktyg för fritidshus</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg-page: #f5f5f2;
@@ -15,6 +18,9 @@
       --text-tertiary: #888780;
       --border-default: rgba(0,0,0,0.12);
       --border-emphasis: rgba(0,0,0,0.25);
+      --accent: #2D6A3F;
+      --accent-bg: rgba(45,106,63,0.07);
+      --accent-border: rgba(45,106,63,0.32);
     }
 
     @media (prefers-color-scheme: dark) {
@@ -27,13 +33,16 @@
         --text-tertiary: #6e6d69;
         --border-default: rgba(255,255,255,0.10);
         --border-emphasis: rgba(255,255,255,0.20);
+        --accent: #4ade80;
+        --accent-bg: rgba(74,222,128,0.07);
+        --accent-border: rgba(74,222,128,0.28);
       }
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+      font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
       font-size: 16px;
       line-height: 1.7;
       font-weight: 400;
@@ -70,9 +79,10 @@
     }
 
     .header h1 {
-      font-size: 26px;
-      font-weight: 500;
-      letter-spacing: -0.02em;
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 30px;
+      font-weight: 400;
+      letter-spacing: -0.01em;
       line-height: 1.2;
     }
 
@@ -206,26 +216,34 @@
 
     .verdict-card {
       border-radius: 12px;
-      border: 0.5px solid transparent;
-      padding: 1.1rem 1.25rem;
+      border: 0.5px solid var(--border-default);
+      padding: 1.4rem 1.5rem;
       margin-bottom: 1rem;
-      transition: background 0.25s, border-color 0.25s, color 0.25s;
+      background: var(--bg-card);
+      transition: background 0.3s, border-color 0.3s, color 0.3s;
+    }
+
+    .verdict-card.verdict-ready {
+      border-color: transparent;
     }
 
     .verdict-overline {
       font-size: 11px;
       font-weight: 500;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      opacity: 0.65;
-      margin-bottom: 0.2rem;
+      letter-spacing: 0.09em;
+      opacity: 0.6;
+      margin-bottom: 0.35rem;
     }
 
     .verdict-amount {
-      font-size: 32px;
-      font-weight: 500;
-      line-height: 1.1;
-      margin-bottom: 0.3rem;
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 52px;
+      font-weight: 400;
+      line-height: 1.05;
+      margin-bottom: 0.35rem;
+      letter-spacing: -0.01em;
+      transition: color 0.3s;
     }
 
     .verdict-desc {
@@ -272,9 +290,9 @@
 
     .bar-track {
       width: 100%;
-      height: 5px;
+      height: 8px;
       background: var(--bg-surface);
-      border-radius: 3px;
+      border-radius: 4px;
       overflow: hidden;
     }
 
@@ -323,11 +341,26 @@
       line-height: 1.5;
     }
 
-    #fetch-btn-el:hover:not(:disabled) { border-color: var(--border-emphasis); }
+    #fetch-btn-el:hover:not(:disabled) { border-color: var(--accent-border); color: var(--accent); }
     #fetch-btn-el:disabled { opacity: 0.5; cursor: default; }
-    .import-ok    { color: #3B6D11; }
+    .import-ok    { color: var(--accent); }
     .import-error { color: #A32D2D; }
     .import-loading { color: var(--text-tertiary); }
+
+    /* Import card accent border */
+    #import-card { border-left: 3px solid var(--accent); }
+
+    /* Result-column cards: subtle surface background to distinguish from input cards */
+    .result-col .card { background: var(--bg-surface); }
+
+    /* Metric tiles container */
+    .metric-tiles-card {
+      background: var(--bg-card);
+      border: 0.5px solid var(--border-default);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
 
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinner {
@@ -450,28 +483,28 @@
       <div class="grid-2">
         <label>
           <span class="label-text" id="label-asking">Utgångspris (kr)</span>
-          <input type="number" id="asking" value="3295000" oninput="recalc()">
+          <input type="number" id="asking" placeholder="—" oninput="recalc()">
         </label>
         <label>
           <span class="label-text" id="label-sqm">Boyta (m²)</span>
-          <input type="number" id="sqm" value="105" oninput="recalc()">
+          <input type="number" id="sqm" placeholder="—" oninput="recalc()">
         </label>
         <label>
           <span class="label-text" id="label-taxval">Taxeringsvärde (kr)</span>
-          <input type="number" id="taxval" value="2845000" oninput="recalc()">
+          <input type="number" id="taxval" placeholder="—" oninput="recalc()">
           <span class="peak-warning" id="taxval-warning">Taxeringsvärdet speglar troligen 2022 års toppnivåer — dämpning tillämpas automatiskt.</span>
         </label>
         <label>
           <span class="label-text" id="label-buildyear">Byggnadsår</span>
-          <input type="number" id="buildyear" value="2022" oninput="recalc()">
+          <input type="number" id="buildyear" placeholder="—" oninput="recalc()">
         </label>
         <label>
           <span class="label-text" id="label-opex">Årliga driftkostnader (kr/år)</span>
-          <input type="number" id="opex" value="17683" oninput="recalc()">
+          <input type="number" id="opex" placeholder="—" oninput="recalc()">
         </label>
         <label>
           <span class="label-text" id="label-plot">Tomtareal (m²)</span>
-          <input type="number" id="plot" value="2153" oninput="recalc()">
+          <input type="number" id="plot" placeholder="—" oninput="recalc()">
         </label>
       </div>
     </div>
@@ -482,16 +515,16 @@
       <div class="grid-2">
         <label>
           <span class="label-text" id="label-medianpsm">Mediankris i området (kr/m²)</span>
-          <input type="number" id="medianpsm" value="24000" oninput="recalc()">
+          <input type="number" id="medianpsm" placeholder="—" oninput="recalc()">
           <span class="helper-note" id="medianpsm-source" style="display:none;font-size:12px"></span>
         </label>
         <label>
           <span class="label-text" id="label-newbuild">Nybyggnadspremie (kr/m²)</span>
-          <input type="number" id="newbuild" value="4000" oninput="recalc()">
+          <input type="number" id="newbuild" placeholder="0" oninput="recalc()">
         </label>
         <label>
           <span class="label-text" id="label-peakpsm">Toppmarknadspris (kr/m²)</span>
-          <input type="number" id="peakpsm" value="35000" oninput="recalc()">
+          <input type="number" id="peakpsm" placeholder="—" oninput="recalc()">
         </label>
         <label>
           <span class="label-text" id="label-cycleidx">Marknadskonjunktur</span>
@@ -595,12 +628,13 @@
     <!-- Verdict card -->
     <div id="verdict-card" class="verdict-card">
       <div class="verdict-overline" id="verdict-overline">Uppskattat marknadsvärde</div>
-      <div class="verdict-amount" id="verdict-amount">—</div>
-      <div class="verdict-desc" id="verdict-desc">Fyll i uppgifterna ovan för att beräkna.</div>
+      <div class="verdict-amount" id="verdict-amount" style="color:var(--text-tertiary)">—</div>
+      <div class="verdict-desc" id="verdict-desc" style="color:var(--text-tertiary)">Klistra in en annons-URL ovan för att beräkna.</div>
     </div>
 
     <!-- Metric tiles -->
-    <div class="grid-3">
+    <div class="metric-tiles-card">
+    <div class="grid-3" style="margin-bottom:0">
       <div class="metric-tile">
         <div class="metric-tile-label" id="mt-label-asking-psm">Utgångspris/m²</div>
         <div class="metric-tile-value" id="m-asking-psm">—</div>
@@ -614,6 +648,7 @@
         <div class="metric-tile-value" id="m-tax-ratio">—</div>
       </div>
     </div>
+    </div><!-- /.metric-tiles-card -->
 
     <!-- Signal breakdown -->
     <div class="card">
@@ -1186,6 +1221,8 @@
         if (!res || !res.ok) {
           setImportStatus('import-error', t('importError') + (lastErr && lastErr.detail ? ' (' + lastErr.detail + ')' : ''));
           document.getElementById('property-header').style.display = 'none';
+          document.getElementById('header-sub').style.display  = '';
+          document.getElementById('header-note').style.display = '';
           return;
         }
         var data = await res.json();
@@ -1218,6 +1255,8 @@
           document.getElementById('property-area').textContent    = data.area    || '';
           document.getElementById('property-address').textContent = data.address || '';
           document.getElementById('property-header').style.display = 'flex';
+          document.getElementById('header-sub').style.display  = 'none';
+          document.getElementById('header-note').style.display = 'none';
           saveToHistory(url, data.area, data.address);
         }
 
@@ -1356,12 +1395,16 @@
 
       /* ── Verdict card ── */
       var vc = document.getElementById('verdict-card');
+      vc.classList.add('verdict-ready');
       vc.style.background  = vBg;
       vc.style.borderColor = vColor + '38';
       vc.style.color       = vColor;
-      document.getElementById('verdict-amount').textContent = fmtKr(fairVal);
-      document.getElementById('verdict-desc').textContent =
-        t('vDesc')(vLabel, fmtPct(gapPct), diffSign + fmtKr(diffKr));
+      var amtEl = document.getElementById('verdict-amount');
+      amtEl.textContent = fmtKr(fairVal);
+      amtEl.style.color = '';
+      var descEl = document.getElementById('verdict-desc');
+      descEl.textContent = t('vDesc')(vLabel, fmtPct(gapPct), diffSign + fmtKr(diffKr));
+      descEl.style.color = '';
 
       /* ── Metric tiles ── */
       document.getElementById('m-asking-psm').textContent =
