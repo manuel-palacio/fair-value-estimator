@@ -414,6 +414,7 @@
       </div>
       <p class="helper-note" id="import-source-note" style="margin-bottom:0.25rem">Stöds för närvarande: Fastighetsbyran.com</p>
       <p class="helper-note" id="import-status" style="min-height:1.2em"></p>
+      <p class="peak-warning" id="type-warning" style="display:none"></p>
       <div id="history-list"></div>
     </div>
 
@@ -626,6 +627,7 @@
         importLoading:  'Hämtar annonsdata\u2026',
         importOk:       function(n) { return 'Hittade ' + n + ' f\u00e4lt \u2014 kontrollera marknadsdata och kvalitativa justeringar manuellt.'; },
         importError:    'Kunde inte h\u00e4mta annonsdata. Kontrollera URL:en.',
+        typeWarning:    function(typ) { return 'OBS: Annonsen gäller \u201c' + typ + '\u201d \u2014 inte fritidshus. Modellen är kalibrerad för semesterbostäder och jämförelsesiffrorna från SCB stämmer inte för permanent boende.'; },
         cardCore:       'Grunduppgifter',
         labelAsking:    'Utgångspris (kr)',
         labelSqm:       'Boyta (m²)',
@@ -741,6 +743,7 @@
         importLoading:  'Fetching listing data\u2026',
         importOk:       function(n) { return 'Populated ' + n + ' fields \u2014 check market data and qualitative adjustments manually.'; },
         importError:    'Could not fetch listing. Check the URL.',
+        typeWarning:    function(typ) { return 'Warning: listing type is \u201c' + typ + '\u201d \u2014 not a fritidshus. The model is calibrated for vacation homes; SCB comparables and market signals will not apply to permanent residences.'; },
         cardCore:       'Core details',
         labelAsking:    'Asking price (kr)',
         labelSqm:       'Living area (m²)',
@@ -1115,11 +1118,12 @@
       btn.prepend(spinEl);
       setImportStatus('import-loading', '');
 
-      // Clear previous import highlights
+      // Clear previous import highlights and warnings
       NUMERIC_FIELDS.concat(DROPDOWN_FIELDS).forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.classList.remove('field-imported');
       });
+      document.getElementById('type-warning').style.display = 'none';
 
       try {
         var res = await fetch('/api/parse?url=' + encodeURIComponent(url));
@@ -1159,6 +1163,17 @@
           document.getElementById('property-address').textContent = data.address || '';
           document.getElementById('property-header').style.display = 'block';
           saveToHistory(url, data.area, data.address);
+        }
+
+        // Property-type warning
+        var typeWarnEl = document.getElementById('type-warning');
+        var propType = data.property_type || '';
+        var isFritidshus = /fritid/i.test(propType);
+        if (propType && !isFritidshus) {
+          typeWarnEl.textContent = t('typeWarning')(propType);
+          typeWarnEl.style.display = 'block';
+        } else {
+          typeWarnEl.style.display = 'none';
         }
 
         recalc();

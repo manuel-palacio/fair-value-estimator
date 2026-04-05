@@ -181,15 +181,23 @@ def parse_listing(url: str) -> dict:
     tomt_raw = basfakta.get("tomtArea", "")
     plot = int(re.sub(r"\D", "", tomt_raw)) if tomt_raw else None
 
+    # Property type: try basfakta first, fall back to fakta posts
+    prop_type = (
+        basfakta.get("typBeteckning")
+        or find_in_posts(all_posts, "Typ")
+        or None
+    )
+
     result: dict = {
-        "asking":    basfakta.get("oformateratPris"),
-        "sqm":       basfakta.get("oformateradArea"),
-        "plot":      plot,
-        "buildyear": int(basfakta["byggnadsAar"]) if basfakta.get("byggnadsAar") else None,
-        "taxval":    root.get("taxeringsvaerde"),
-        "opex":      fakta.get("totalDriftskostnad"),
-        "address":   basfakta.get("gatuadress") or None,
-        "area":      basfakta.get("zon") or None,
+        "asking":        basfakta.get("oformateratPris"),
+        "sqm":           basfakta.get("oformateradArea"),
+        "plot":          plot,
+        "buildyear":     int(basfakta["byggnadsAar"]) if basfakta.get("byggnadsAar") else None,
+        "taxval":        root.get("taxeringsvaerde"),
+        "opex":          fakta.get("totalDriftskostnad"),
+        "address":       basfakta.get("gatuadress") or None,
+        "area":          basfakta.get("zon") or None,
+        "property_type": prop_type,
     }
 
     # Energy class → adj_energy
