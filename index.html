@@ -342,7 +342,20 @@
     }
 
     /* Highlight fields populated from listing */
-    .field-imported { border-color: rgba(59,109,17,0.45) !important; }
+    .field-imported { border-color: rgba(59,109,17,0.5) !important; background: rgba(59,109,17,0.05) !important; }
+    .label-imported .label-text::after {
+      content: 'Auto';
+      display: inline-block;
+      margin-left: 0.4rem;
+      padding: 0.05rem 0.35rem;
+      background: rgba(59,109,17,0.12);
+      color: #3B6D11;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      vertical-align: middle;
+    }
 
     /* Recent valuations history */
     #history-list { margin-top: 0.6rem; display: flex; gap: 0.4rem; align-items: center; }
@@ -384,10 +397,13 @@
         <h1>Bovärdare</h1>
         <p class="header-sub" id="header-sub">Värderingsverktyg för fritidshus</p>
         <p class="header-note" id="header-note">Anpassat för svenska fritidshus — gäller ej villor eller bostadsrätter.</p>
-        <div id="property-header" style="display:none;margin-top:0.75rem;padding-top:0.75rem;border-top:0.5px solid var(--border-default)">
-          <p style="font-size:12px;color:var(--text-tertiary);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:0.2rem" id="property-header-label">Värdering för</p>
-          <p style="font-size:16px;font-weight:500;color:var(--text-primary);line-height:1.3" id="property-area"></p>
-          <p style="font-size:14px;color:var(--text-secondary)" id="property-address"></p>
+        <div id="property-header" style="display:none;margin-top:0.75rem;padding-top:0.75rem;border-top:0.5px solid var(--border-default);flex-direction:row;align-items:flex-start;gap:1rem;justify-content:space-between">
+          <div>
+            <p style="font-size:12px;color:var(--text-tertiary);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:0.2rem" id="property-header-label">Värdering för</p>
+            <p style="font-size:16px;font-weight:500;color:var(--text-primary);line-height:1.3" id="property-area"></p>
+            <p style="font-size:14px;color:var(--text-secondary)" id="property-address"></p>
+          </div>
+          <div id="type-warning" style="display:none;flex-shrink:0;margin-top:0.15rem;padding:0.35rem 0.75rem;background:#FEF3C7;border:1px solid #F59E0B;border-radius:6px;font-size:12px;font-weight:500;color:#92400E;line-height:1.4;max-width:260px"></div>
         </div>
       </div>
       <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
@@ -414,7 +430,6 @@
       </div>
       <p class="helper-note" id="import-source-note" style="margin-bottom:0.25rem">Stöds för närvarande: Fastighetsbyran.com</p>
       <p class="helper-note" id="import-status" style="min-height:1.2em"></p>
-      <p class="peak-warning" id="type-warning" style="display:none"></p>
       <div id="history-list"></div>
     </div>
 
@@ -1088,7 +1103,12 @@
       var el = document.getElementById(id);
       if (el) {
         el.classList.add('field-imported');
-        el.addEventListener('input', function() { el.classList.remove('field-imported'); }, { once: true });
+        var lbl = el.closest('label');
+        if (lbl) lbl.classList.add('label-imported');
+        el.addEventListener('input', function() {
+          el.classList.remove('field-imported');
+          if (lbl) lbl.classList.remove('label-imported');
+        }, { once: true });
       }
     }
 
@@ -1121,7 +1141,11 @@
       // Clear previous import highlights and warnings
       NUMERIC_FIELDS.concat(DROPDOWN_FIELDS).forEach(function(id) {
         var el = document.getElementById(id);
-        if (el) el.classList.remove('field-imported');
+        if (el) {
+          el.classList.remove('field-imported');
+          var lbl = el.closest('label');
+          if (lbl) lbl.classList.remove('label-imported');
+        }
       });
       document.getElementById('type-warning').style.display = 'none';
 
@@ -1161,7 +1185,7 @@
         if (data.area || data.address) {
           document.getElementById('property-area').textContent    = data.area    || '';
           document.getElementById('property-address').textContent = data.address || '';
-          document.getElementById('property-header').style.display = 'block';
+          document.getElementById('property-header').style.display = 'flex';
           saveToHistory(url, data.area, data.address);
         }
 
